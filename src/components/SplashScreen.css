@@ -1,0 +1,98 @@
+/*
+  Fluid layout: one design for phone, tablet and website.
+  Sizes scale with clamp(min, fluid, max); the minimums equal the Figma values
+  (pill 230x70, title 32px, tagline 16px) so phones match the mockup exactly.
+*/
+.screen {
+  --pill-w: clamp(230px, 22vw, 340px);
+  --pill-h: calc(var(--pill-w) * 70 / 230);
+  --title-size: clamp(32px, 3.2vw, 56px);
+  --tagline-size: clamp(16px, 1.5vw, 24px);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 40px 16px 0;
+  margin: 0;
+  border: 0;
+  background: #fff;
+  font: inherit;
+  overflow: hidden;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.logo-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 25px; /* matches Figma's vertical position on phones */
+}
+
+.logo-pill {
+  width: var(--pill-w);
+  max-width: 100%;
+  height: var(--pill-h);
+  border-radius: 999px;
+  background: var(--blue);
+}
+
+.title {
+  margin: calc(var(--title-size) * 0.56) 0 0;
+  font-weight: 700;
+  font-size: var(--title-size);
+  line-height: normal;
+  text-transform: uppercase;
+  text-align: center;
+  color: #000;
+  white-space: nowrap;
+}
+.title .dress { color: var(--orange); }
+.title .num { color: var(--indigo); }
+
+.tagline {
+  margin: 1px 0 0;
+  font-weight: 400;
+  font-size: var(--tagline-size);
+  line-height: normal;
+  text-align: center;
+  color: var(--navy);
+}
+
+.status {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 69px;
+  padding: 10px 16px;
+  padding-top: calc(10px + env(safe-area-inset-top, 0px));
+  font-family: "Outfit", sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: -0.3px;
+  color: var(--ink);
+  pointer-events: none;
+}
+.status svg { width: 68.66px; height: 11.33px; display: block; flex: none; }
+
+.screen:focus-visible { outline: 3px solid var(--orange); outline-offset: -6px; }
+
+/* Website / desktop: no fake phone status bar, centered content */
+@media (min-width: 768px) {
+  .status { display: none; }
+  .screen { padding-top: 0; }
+  .logo-block { padding-top: 0; }
+}
+
+/* Landscape phones / very short screens */
+@media (max-height: 480px) {
+  .screen { padding-top: 48px; }
+  .logo-block { padding-top: 0; }
+}

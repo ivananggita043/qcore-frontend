@@ -1,0 +1,21 @@
+:root {
+  --blue: #220ed5;
+  --orange: #ff9d00;
+  --indigo: #3748a1;
+  --navy: #1e1480;
+  --ink: #262323;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root { height: 100%; margin: 0; }
+
+body {
+  background: #fff;
+  font-family: "Poppins", system-ui, sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
