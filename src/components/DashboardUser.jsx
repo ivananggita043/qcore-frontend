@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import StatusBar from "./StatusBar.jsx";
+import { SECTIONS, WORK_HOURS, hourLabel, hourSlots } from "../config/sections.js";
 import "./DashboardUser.css";
 
 /* ---------- helper tanggal ---------- */
@@ -12,24 +13,26 @@ const longDate = (s) => { const d = fromISO(s); return `${d.getDate()} ${MONTHS[
 const shortDate = (s) => { const d = fromISO(s); return `${d.getDate()} ${SHORT[d.getMonth()]}`; };
 
 /* ---------- data contoh (ganti dengan API) ---------- */
+// "hour" = jam yang dipilih saat input (dipakai section per jam),
+// "time" = waktu saat Submit ditekan.
 const TODAY = toISO(new Date());
 const YESTERDAY = toISO(new Date(Date.now() - 864e5));
 const MOCK = {
   [TODAY]: {
-    summary: { inspections: 1, defect: 13, defectPct: 7, qty: 40 },
+    summary: { inspections: 5, defect: 13, defectPct: 7, qty: 200 },
     checks: [
-      { id: "QCUH2038", time: "10.00", status: "Finish", style: "VS", qty: 40 },
-      { id: "DR-2401",  time: "10.42", status: "Pass",   style: "EL", qty: 40 },
-      { id: "DR-2401",  time: "10.43", status: "Pass",   style: "EL", qty: 40 },
-      { id: "DR-2401",  time: "10.43", status: "Pass",   style: "EL", qty: 40 },
-      { id: "DR-2401",  time: "10.43", status: "Pass",   style: "EL", qty: 40 },
+      { id: "QCUH2038", time: "10.00", hour: 10, status: "Finish", style: "VS", qty: 40 },
+      { id: "DR-2401",  time: "10.42", hour: 10, status: "Pass",   style: "EL", qty: 40 },
+      { id: "DR-2401",  time: "10.43", hour: 9,  status: "Pass",   style: "EL", qty: 40 },
+      { id: "DR-2401",  time: "10.43", hour: 8,  status: "Pass",   style: "EL", qty: 40 },
+      { id: "DR-2401",  time: "10.43", hour: 8,  status: "Pass",   style: "EL", qty: 40 },
     ],
   },
   [YESTERDAY]: {
     summary: { inspections: 2, defect: 4, defectPct: 3, qty: 80 },
     checks: [
-      { id: "DR-2399", time: "09.15", status: "Pass", style: "EL", qty: 40 },
-      { id: "DR-2398", time: "14.30", status: "Pass", style: "VS", qty: 40 },
+      { id: "DR-2399", time: "09.15", hour: 9,  status: "Pass", style: "EL", qty: 40 },
+      { id: "DR-2398", time: "14.30", hour: 14, status: "Pass", style: "VS", qty: 40 },
     ],
   },
 };
@@ -42,7 +45,7 @@ const MENU = [
 ];
 
 export default function DashboardUser({
-  user = { code: "QCSEWINGLINE03", area: "SEWING . LINE 03" },
+  user = { code: "QCSWGLN03", area: "SEWING . LINE 3", section: "sewing" },
   onLogout,
   onNavigate,
   onNewCheck,
@@ -53,6 +56,15 @@ export default function DashboardUser({
   const dateRef = useRef(null);
 
   const { summary, checks } = MOCK[date] ?? EMPTY;
+  const hourly = SECTIONS[user.section]?.frequency === "hourly";
+
+  // Slot jam yang ditampilkan: semua jam yang sudah tiba (hari ini)
+  // atau seluruh jam kerja (tanggal lampau), terbaru di atas.
+  const nowHour = new Date().getHours();
+  const lastDue = date === TODAY ? Math.min(nowHour, WORK_HOURS.end - 1) : WORK_HOURS.end - 1;
+  const slots = hourSlots()
+    .filter((h) => h <= lastDue || checks.some((c) => c.hour === h))
+    .reverse();
 
   // tutup drawer dengan tombol Esc
   useEffect(() => {
@@ -126,25 +138,42 @@ export default function DashboardUser({
           </div>
         </section>
 
-        <button type="button" className="btn-primary" onClick={onNewCheck}>
-          + New QC Check
-        </button>
+        <button type="button" className="btn-primary" onClick={onNewCheck}>+ New QC Check</button>
         <button type="button" className="btn-outline">History</button>
 
-        {/* Recent check */}
-        <h2 className="recent-title">Recent Check</h2>
-        {checks.length === 0 ? (
+        {/* Daftar check */}
+        <h2 className="recent-title">{hourly ? "Check per Jam" : "Recent Check"}</h2>
+
+        {hourly ? (
+          slots.length === 0 ? (
+            <p className="empty">Belum ada jam kerja untuk tanggal ini.</p>
+          ) : (
+            <div className="hours">
+              {slots.map((h) => {
+                const list = checks.filter((c) => c.hour === h);
+                return (
+                  <section key={h} className="hour-group">
+                    <h3 className="hour-head">
+                      <span>{hourLabel(h)}</span>
+                      {list.length > 0 && <small>{list.length} check</small>}
+                    </h3>
+                    {list.length > 0 ? (
+                      <ul className="checks">
+                        {list.map((c, i) => <CheckCard key={i} c={c} date={date} />)}
+                      </ul>
+                    ) : (
+                      <p className="hour-empty">Belum diisi</p>
+                    )}
+                  </section>
+                );
+              })}
+            </div>
+          )
+        ) : checks.length === 0 ? (
           <p className="empty">No QC checks on this date.</p>
         ) : (
           <ul className="checks">
-            {checks.map((c, i) => (
-              <li key={i} className="card check">
-                <span className="check-id">{c.id}</span>
-                <span className={`badge ${c.status.toLowerCase()}`}>{c.status}</span>
-                <span className="check-meta">{shortDate(date)} - {c.time}</span>
-                <span className="check-meta">{c.style} - {c.qty} pcs</span>
-              </li>
-            ))}
+            {checks.map((c, i) => <CheckCard key={i} c={c} date={date} />)}
           </ul>
         )}
       </div>
@@ -206,6 +235,17 @@ export default function DashboardUser({
         </button>
       </nav>
     </main>
+  );
+}
+
+function CheckCard({ c, date }) {
+  return (
+    <li className="card check">
+      <span className="check-id">{c.id}</span>
+      <span className={`badge ${c.status.toLowerCase()}`}>{c.status}</span>
+      <span className="check-meta">{shortDate(date)} - {c.time}</span>
+      <span className="check-meta">{c.style} - {c.qty} pcs</span>
+    </li>
   );
 }
 

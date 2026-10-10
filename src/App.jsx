@@ -3,17 +3,11 @@ import SplashScreen from "./components/SplashScreen.jsx";
 import Login from "./components/Login.jsx";
 import DashboardUser from "./components/DashboardUser.jsx";
 import NewQcCheck from "./components/NewQcCheck.jsx";
-import QcSewing from "./components/QcSewing.jsx";
+import QcStandard from "./components/QcStandard.jsx";
 import CuttingCheck from "./components/CuttingCheck.jsx";
 import Profile from "./components/Profile.jsx";
 import DevSectionSwitcher from "./dev/DevSectionSwitcher.jsx"; // hapus saat tidak dipakai lagi
-
-const SECTION_LABEL = {
-  cutting: "Cutting",
-  sewing: "Sewing",
-  washing: "Washing",
-  finishing: "Finishing",
-};
+import { SECTIONS } from "./config/sections.js";
 
 // Data contoh pengguna (nanti dari API setelah login)
 const BASE_USER = {
@@ -30,19 +24,26 @@ const BASE_USER = {
 function initialSection() {
   if (!import.meta.env.DEV) return "sewing";
   const q = new URLSearchParams(window.location.search).get("section");
-  return q && q in SECTION_LABEL ? q : "sewing";
+  return q && q in SECTIONS ? q : "sewing";
 }
+
+const todayISO = () => {
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+};
 
 export default function App() {
   const [screen, setScreen] = useState("splash");
   const [job, setJob] = useState(null); // data dari form New QC Check
   const [section, setSection] = useState(initialSection);
 
+  const cfg = SECTIONS[section];
   const user = {
     ...BASE_USER,
     section,
-    process: SECTION_LABEL[section],
-    area: `${SECTION_LABEL[section].toUpperCase()} . LINE ${BASE_USER.line}`,
+    process: cfg.label,
+    area: `${cfg.label.toUpperCase()} . LINE ${BASE_USER.line}`,
   };
 
   // hanya dipanggil dari kotak DEV
@@ -50,8 +51,7 @@ export default function App() {
     setSection(next);
     const url = new URL(window.location.href);
     url.searchParams.set("section", next);
-    window.history.replaceState(null, "", url); // tetap saat halaman di-refresh
-    // keluar dari layar pemeriksaan yang sedang terbuka
+    window.history.replaceState(null, "", url);
     if (["cutting", "newcheck", "qcsewing"].includes(screen)) {
       setJob(null);
       setScreen("dashboard");
@@ -78,11 +78,14 @@ export default function App() {
 
     if (screen === "qcsewing" && job) {
       return (
-        <QcSewing
+        <QcStandard
           job={job}
+          section={section}
+          sectionLabel={cfg.label}
           onBack={() => setScreen("newcheck")}
           onSubmit={(data) => {
-            console.log("submit QC:", data);
+            // TODO: kirim ke API. Waktu submit sebaiknya dicatat server.
+            console.log("submit QC:", { section, date: todayISO(), ...data });
             setJob(null);
             setScreen("dashboard");
           }}
@@ -93,6 +96,7 @@ export default function App() {
     if (screen === "newcheck") {
       return (
         <NewQcCheck
+          hourly={cfg.frequency === "hourly"}
           onBack={() => setScreen("dashboard")}
           onStart={(data) => {
             setJob(data);
@@ -106,9 +110,7 @@ export default function App() {
       return (
         <DashboardUser
           user={user}
-          onNewCheck={() =>
-            setScreen(user.section === "cutting" ? "cutting" : "newcheck")
-          }
+          onNewCheck={() => setScreen(cfg.flow === "cutting" ? "cutting" : "newcheck")}
           onNavigate={(key) => key === "profile" && setScreen("profile")}
           onLogout={() => setScreen("login")}
         />

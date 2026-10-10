@@ -1,0 +1,270 @@
+.qs {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding-top: 40px; /* ruang untuk status bar di HP */
+  background: #fff;
+}
+
+/* Header */
+.qs-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 56px;
+  padding: 0 20px;
+  border-bottom: 1px solid #e3e3e3;
+}
+.qs-back {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin-left: -6px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: #262323;
+  cursor: pointer;
+}
+.qs-back:hover { background: rgba(55, 72, 161, 0.08); }
+.qs-back:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+.qs-title { margin: 0; font-weight: 600; font-size: 20px; color: var(--indigo); }
+
+/* Isi */
+.qs-main {
+  flex: 1;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 14px 20px 16px;
+}
+
+.qs-job {
+  margin: 0 0 12px;
+  font-size: clamp(15px, 4.3vw, 18px);
+  line-height: 1.4;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+.qs-job .b { color: var(--indigo); }
+.qs-job .o { color: var(--orange); }
+
+.qs-search {
+  display: block;
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  color: #000;
+}
+.qs-search::placeholder { color: rgba(0, 0, 0, 0.35); }
+.qs-search:focus {
+  outline: none;
+  border-color: var(--indigo);
+  box-shadow: 0 0 0 3px rgba(55, 72, 161, 0.18);
+}
+
+/* Kategori */
+.qs-tabs {
+  display: flex;
+  gap: 6px;
+  margin-top: 12px;
+  padding-bottom: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.qs-tabs::-webkit-scrollbar { display: none; }
+.qs-tab {
+  flex: 1 0 auto;
+  min-width: 64px;
+  height: 40px;
+  padding: 0 8px;
+  border: 1px solid var(--indigo);
+  border-radius: 6px;
+  background: #fff;
+  font: inherit;
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--indigo);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.qs-tab:hover { background: rgba(55, 72, 161, 0.08); }
+.qs-tab.active { background: var(--indigo); color: #fff; }
+.qs-tab:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+
+/* Daftar area */
+.qs-list { margin: 16px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.qs-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 14px;
+  background: #fff;
+  border: 1px solid #d5d5d5;
+  border-radius: 12px;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.qs-item.has { border-color: var(--indigo); background: rgba(55, 72, 161, 0.05); }
+.qs-area { font-size: 15px; color: #16026d; }
+
+.qs-step { display: flex; align-items: center; gap: 4px; }
+.qs-step button {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--indigo);
+  border-radius: 50%;
+  background: #fff;
+  font: inherit;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--indigo);
+  cursor: pointer;
+}
+.qs-step button:disabled { opacity: 0.35; cursor: default; }
+.qs-step button:not(:disabled):hover { background: rgba(55, 72, 161, 0.1); }
+.qs-step button:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+.qs-step output {
+  min-width: 32px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 16px;
+  color: #262323;
+}
+
+.qs-empty { margin: 24px 0 0; text-align: center; font-size: 14px; color: #808080; }
+
+/* Tombol Submit menempel di bawah */
+.qs-foot {
+  position: sticky;
+  bottom: 0;
+  padding: 12px 20px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to top, #fff 75%, rgba(255, 255, 255, 0));
+}
+.qs-submit {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  height: 48px;
+  margin: 0 auto;
+  border: 0;
+  border-radius: 10px;
+  background: #06c053;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  color: #000;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+.qs-submit:hover { filter: brightness(1.06); }
+.qs-submit:active { filter: brightness(0.95); }
+.qs-submit:focus-visible { outline: 3px solid var(--indigo); outline-offset: 3px; }
+
+/* Website / desktop */
+@media (min-width: 768px) {
+  .qs { padding-top: 0; }
+  .qs-head { padding: 0 max(20px, calc((100% - 560px) / 2 + 20px)); }
+  .qs-main { max-width: 560px; padding-top: 24px; }
+  .qs-submit { max-width: 560px; }
+}
+
+.qs-hour { margin: -6px 0 12px; font-size: 12px; color: #808080; }
+
+.qs-tab { position: relative; }
+.qs-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 16px;
+  height: 16px;
+  margin-left: 4px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--orange);
+  font-size: 9px;
+  color: #000;
+}
+
+.qs-sub { margin: 18px 0 8px; font-size: 13px; font-weight: 600; color: var(--indigo); }
+.qs-picked { font-weight: 400; color: #808080; }
+.qs-list { margin-top: 0; }
+
+/* Pilihan defect area */
+.qs-areas {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  max-height: 232px;
+  padding: 2px;
+  overflow-y: auto;
+}
+.qs-area-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid #d0cfcf;
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.2;
+  text-align: left;
+  color: #4a4a4a;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.qs-area-chip:hover { background: rgba(55, 72, 161, 0.06); }
+.qs-area-chip:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+.qs-area-chip.has { border-color: var(--indigo); }
+.qs-area-chip.sel { background: var(--indigo); border-color: var(--indigo); color: #fff; }
+.qs-area-chip em {
+  display: grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--orange);
+  font-style: normal;
+  font-size: 10px;
+  color: #000;
+}
+
+/* Ringkasan dicatat */
+.qs-recorded { margin-top: 8px; padding-top: 4px; border-top: 1px solid #ececec; }
+.qs-recorded ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.qs-recorded li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: #f6f7fb;
+  font-size: 12px;
+  color: #262323;
+}
+.qs-recorded li span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.qs-recorded li b { color: var(--indigo); font-weight: 600; }
+.qs-recorded li strong { color: var(--indigo); }
+.qs-recorded li button {
+  width: 24px; height: 24px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  font-size: 16px;
+  color: #808080;
+  cursor: pointer;
+}
+.qs-recorded li button:hover { background: rgba(229, 50, 45, 0.1); color: #e5322d; }

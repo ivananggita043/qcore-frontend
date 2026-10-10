@@ -284,3 +284,26 @@
   .dash { padding-top: 40px; }
   .dash-inner { max-width: 560px; }
 }
+
+/* Daftar per jam (sewing, washing) */
+.hours { display: grid; gap: 18px; }
+.hour-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0 0 8px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--indigo);
+}
+.hour-head small { font-weight: 400; font-size: 12px; color: #808080; }
+.hour-group .checks { gap: 12px; }
+.hour-empty {
+  margin: 0;
+  padding: 12px 16px;
+  border: 1px dashed #e0c9a0;
+  border-radius: 12px;
+  background: #fffaf1;
+  font-size: 13px;
+  color: #b26a00;
+}
