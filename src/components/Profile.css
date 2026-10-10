@@ -1,0 +1,125 @@
+.profile {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding-top: 40px; /* ruang untuk status bar di HP */
+  background: #f6f7fb;
+}
+
+/* Header */
+.pf-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 56px;
+  padding: 0 20px;
+  background: #fff;
+  border-bottom: 1px solid #e3e3e3;
+}
+.pf-back {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin-left: -6px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: #262323;
+  cursor: pointer;
+}
+.pf-back:hover { background: rgba(55, 72, 161, 0.08); }
+.pf-back:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+.pf-title {
+  margin: 0;
+  font-weight: 600;
+  font-size: 20px;
+  color: var(--indigo);
+}
+
+/* Isi */
+.pf-body {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 24px 20px 40px;
+}
+
+/* Bagian atas: avatar + identitas */
+.pf-hero {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.pf-avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--indigo);
+  box-shadow: 0 2px 8px rgba(55, 72, 161, 0.18);
+}
+.pf-id { min-width: 0; }
+.pf-code {
+  margin: 0;
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 1.3;
+  color: var(--indigo);
+  overflow-wrap: anywhere;
+}
+.pf-role {
+  margin: 2px 0 0;
+  font-size: 15px;
+  color: #808080;
+}
+.pf-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 3px 12px 3px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+}
+.pf-status i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.pf-status.on  { background: rgba(6, 192, 83, 0.12); color: #06a847; }
+.pf-status.off { background: #e5e5e5; color: #808080; }
+
+/* Kartu detail */
+.pf-card {
+  margin: 24px 0 0;
+  padding: 4px 20px;
+  background: #fff;
+  border: 1px solid #e6e8f0;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+.pf-row { padding: 14px 0; }
+.pf-row + .pf-row { border-top: 1px solid #eef0f5; }
+.pf-row dt {
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: #8a8a8a;
+}
+.pf-row dd {
+  margin: 4px 0 0;
+  font-size: 16px;
+  color: #1c1c1c;
+  overflow-wrap: anywhere;
+}
+
+/* Website / desktop */
+@media (min-width: 768px) {
+  .profile { padding-top: 0; }
+  .pf-head { padding: 0 max(20px, calc((100% - 560px) / 2 + 20px)); }
+  .pf-body { max-width: 560px; padding-top: 32px; }
+}
