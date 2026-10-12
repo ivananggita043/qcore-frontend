@@ -115,3 +115,15 @@
   }
   .newqc-form { max-width: 560px; padding-top: 28px; }
 }
+
+.nq-label { font-size: 15px; color: #555; }
+.nq-field input,
+.nq-field select {
+  height: 56px;
+  font-size: 16px;
+  border-width: 1.5px;
+  border-color: #b5b5b5;
+}
+.nq-field input::placeholder { color: #8a8a8a; }
+.nq-hint { font-size: 13px; color: #666; }
+.nq-submit { height: 56px; font-size: 17px; font-weight: 600; }

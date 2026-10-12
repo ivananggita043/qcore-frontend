@@ -307,3 +307,30 @@
   font-size: 13px;
   color: #b26a00;
 }
+/* Jam kosong dibuat satu baris agar daftar 24 jam tidak panjang */
+.hours { gap: 10px; }
+.hour-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border: 1px dashed #e0c9a0;
+  border-radius: 12px;
+  background: #fffaf1;
+  font-size: 15px;
+  color: #8a4d00;
+}
+.hour-row b { font-weight: 600; }
+.hour-row small { font-size: 13px; }
+
+/* Teks dan tombol lebih besar */
+.dash-area { font-size: 17px; }
+.date-chip { height: 40px; font-size: 15px; }
+.summary-title { font-size: 15px; }
+.stat span { font-size: 12px; }
+.btn-primary, .btn-outline { height: 56px; font-size: 17px; }
+.recent-title { font-size: 22px; }
+.hour-head { font-size: 16px; }
+.hour-head small { font-size: 13px; }
+.check { min-height: 76px; font-size: 15px; }
+.badge { font-size: 14px; }

@@ -1,35 +1,40 @@
 const SECTIONS = ["cutting", "sewing", "washing", "finishing"];
+const ROLES = ["user", "admin"];
 
-// Alat bantu pengembangan: pilih section tanpa mengubah kode.
+// Alat bantu pengembangan: pilih role dan section tanpa mengubah kode.
 // Hanya dirender saat `npm run dev` (lihat App.jsx).
-export default function DevSectionSwitcher({ section, onChange }) {
+export default function DevSectionSwitcher({ section, role, onSection, onRole }) {
+  const row = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 };
+  const sel = { font: "inherit", padding: "2px 4px", borderRadius: 4 };
+
   return (
-    <label
+    <div
       style={{
         position: "fixed",
         left: 8,
         bottom: 8,
         zIndex: 9999,
-        display: "flex",
-        alignItems: "center",
+        display: "grid",
         gap: 6,
-        padding: "6px 10px",
+        padding: "8px 10px",
         borderRadius: 8,
         background: "rgba(0, 0, 0, 0.75)",
         color: "#fff",
         font: "11px/1 system-ui, sans-serif",
       }}
     >
-      DEV · section
-      <select
-        value={section}
-        onChange={(e) => onChange(e.target.value)}
-        style={{ font: "inherit", padding: "2px 4px", borderRadius: 4 }}
-      >
-        {SECTIONS.map((s) => (
-          <option key={s} value={s}>{s}</option>
-        ))}
-      </select>
-    </label>
+      <label style={row}>
+        DEV · role
+        <select value={role} onChange={(e) => onRole(e.target.value)} style={sel}>
+          {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+        </select>
+      </label>
+      <label style={row}>
+        DEV · section
+        <select value={section} onChange={(e) => onSection(e.target.value)} style={sel}>
+          {SECTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+        </select>
+      </label>
+    </div>
   );
 }

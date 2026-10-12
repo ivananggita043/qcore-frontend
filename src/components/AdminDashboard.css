@@ -1,0 +1,35 @@
+/* Kotak ringkasan: abu muda tanpa garis, angka lebih besar */
+.stats.filled .stat {
+  height: 76px;
+  border: 0;
+  border-radius: 8px;
+  background: #f3f3f6;
+}
+.stats.filled .stat strong { font-size: 26px; }
+.stats.filled .stat span { font-size: 12px; color: #6b6b6b; }
+.stat.green { color: #0ea84a; }
+
+@media (max-width: 389px) {
+  .stats.filled { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Performa per line */
+.perf { margin: 0; padding: 6px 18px; list-style: none; }
+.perf-row { padding: 14px 0; }
+.perf-row + .perf-row { border-top: 1px solid #eef0f5; }
+.perf-row .top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.perf-row .nm { font-size: 18px; color: var(--indigo); }
+.perf-row strong { font-size: 20px; font-weight: 600; }
+.perf-row .bar {
+  height: 10px;
+  margin-top: 8px;
+  border-radius: 5px;
+  background: #eceef5;
+  overflow: hidden;
+}
+.perf-row .bar i { display: block; height: 100%; border-radius: 5px; background: currentColor; }
+.perf-row.good { color: #0ea84a; }
+.perf-row.warn { color: #d97f00; }
+.perf-row.bad  { color: #e5322d; }
+
+.perf-legend { margin: 10px 2px 0; font-size: 12px; color: #6b6b6b; }

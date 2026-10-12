@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import StatusBar from "./StatusBar.jsx";
 import { hourLabel } from "../config/sections.js";
 import { categoriesFor } from "../config/defects.js";
@@ -6,6 +6,27 @@ import "./QcStandard.css";
 
 const lineLabel = (l) => (/^\d$/.test(String(l)) ? `0${l}` : l);
 const keyOf = (cat, area, type) => [cat.key, area ?? "", type].join("|");
+const has = (text, q) => text.toLowerCase().includes(q.trim().toLowerCase());
+
+function SearchBox({ value, onChange, placeholder }) {
+  return (
+    <div className="qs-searchwrap">
+      <input
+        className="qs-search"
+        type="search"
+        inputMode="search"
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label={placeholder}
+      />
+      {value && (
+        <button type="button" className="qs-clear" aria-label="Hapus pencarian"
+                onClick={() => onChange("")}>×</button>
+      )}
+    </div>
+  );
+}
 
 export default function QcStandard({
   job,
@@ -17,13 +38,17 @@ export default function QcStandard({
   const categories = useMemo(() => categoriesFor(section), [section]);
   const [catKey, setCatKey] = useState(categories[0].key);
   const [area, setArea] = useState(null);
-  const [query, setQuery] = useState("");
+  const [areaQuery, setAreaQuery] = useState("");
+  const [typeQuery, setTypeQuery] = useState("");
   // key -> { category, area, type, count }
   const [counts, setCounts] = useState({});
+  const typesRef = useRef(null);
 
   const cat = categories.find((c) => c.key === catKey) ?? categories[0];
-  const q = query.trim().toLowerCase();
-  const match = (s) => s.toLowerCase().includes(q);
+  const isAreaType = cat.kind === "areaType";
+  const areas = isAreaType ? cat.areas.filter((a) => has(a, areaQuery)) : [];
+  const types = cat.types.filter((t) => has(t, typeQuery));
+  const showTypeSearch = cat.types.length > 6; // kategori pendek tidak perlu pencarian
 
   const entries = Object.entries(counts);
   const total = entries.reduce((s, [, e]) => s + e.count, 0);
@@ -34,6 +59,11 @@ export default function QcStandard({
       .filter(([, e]) => e.category === cat.label && e.area === a)
       .reduce((s, [, e]) => s + e.count, 0);
   const countOf = (a, type) => counts[keyOf(cat, a, type)]?.count ?? 0;
+
+  // setelah area dipilih, geser layar ke daftar defect type
+  useEffect(() => {
+    if (area) typesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [area]);
 
   const change = (a, type, delta) =>
     setCounts((prev) => {
@@ -55,7 +85,8 @@ export default function QcStandard({
   const selectCategory = (key) => {
     setCatKey(key);
     setArea(null);
-    setQuery("");
+    setAreaQuery("");
+    setTypeQuery("");
   };
 
   const handleSubmit = () =>
@@ -66,29 +97,28 @@ export default function QcStandard({
       })),
     });
 
-  const isAreaType = cat.kind === "areaType";
-  const areas = isAreaType ? cat.areas.filter(match) : [];
-  const types = isAreaType ? cat.types : cat.types.filter(match);
-
-  const TypeRows = ({ forArea }) => (
-    <ul className="qs-list">
-      {types.map((t) => {
-        const n = countOf(forArea, t);
-        return (
-          <li key={t} className={`qs-item ${n > 0 ? "has" : ""}`}>
-            <span className="qs-area">{t}</span>
-            <div className="qs-step">
-              <button type="button" aria-label={`Kurangi ${t}`} disabled={n === 0}
-                      onClick={() => change(forArea, t, -1)}>−</button>
-              <output aria-live="polite">{n}</output>
-              <button type="button" aria-label={`Tambah ${t}`}
-                      onClick={() => change(forArea, t, 1)}>+</button>
-            </div>
-          </li>
-        );
-      })}
-    </ul>
-  );
+  const renderTypes = (forArea) =>
+    types.length === 0 ? (
+      <p className="qs-empty">Tidak ada defect type yang cocok.</p>
+    ) : (
+      <ul className="qs-list">
+        {types.map((t) => {
+          const n = countOf(forArea, t);
+          return (
+            <li key={t} className={`qs-item ${n > 0 ? "has" : ""}`}>
+              <span className="qs-area">{t}</span>
+              <div className="qs-step">
+                <button type="button" aria-label={`Kurangi ${t}`} disabled={n === 0}
+                        onClick={() => change(forArea, t, -1)}>−</button>
+                <output aria-live="polite">{n}</output>
+                <button type="button" aria-label={`Tambah ${t}`}
+                        onClick={() => change(forArea, t, 1)}>+</button>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    );
 
   return (
     <main className="qs">
@@ -114,16 +144,7 @@ export default function QcStandard({
         </p>
         {job.hour != null && <p className="qs-hour">Jam {hourLabel(job.hour)}</p>}
 
-        <input
-          className="qs-search"
-          type="search"
-          placeholder={isAreaType ? "cari area..." : "cari defect type..."}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          aria-label={isAreaType ? "Cari area" : "Cari defect type"}
-        />
-
-        {/* Kategori */}
+        {/* Kategori (turun ke baris berikutnya, tanpa geser samping) */}
         <div className="qs-tabs" role="group" aria-label="Kategori">
           {categories.map((c) => {
             const n = catTotal(c);
@@ -144,49 +165,64 @@ export default function QcStandard({
 
         {isAreaType ? (
           <>
-            <p className="qs-sub">1. Defect Area</p>
-            {areas.length === 0 ? (
-              <p className="qs-empty">No areas found.</p>
-            ) : (
-              <div className="qs-areas" role="group" aria-label="Defect area">
-                {areas.map((a) => {
-                  const n = areaTotal(a);
-                  return (
-                    <button
-                      key={a}
-                      type="button"
-                      className={`qs-area-chip ${area === a ? "sel" : ""} ${n > 0 ? "has" : ""}`}
-                      aria-pressed={area === a}
-                      onClick={() => setArea(a)}
-                    >
-                      <span>{a}</span>
-                      {n > 0 && <em>{n}</em>}
-                    </button>
-                  );
-                })}
+            <p className="qs-sub">1. Pilih Defect Area</p>
+            {area ? (
+              <div className="qs-picked-bar">
+                <span>{area}</span>
+                <button type="button" onClick={() => setArea(null)}>Ganti area</button>
               </div>
+            ) : (
+              <>
+                <SearchBox value={areaQuery} onChange={setAreaQuery} placeholder="Cari defect area…" />
+                {areas.length === 0 ? (
+                  <p className="qs-empty">Tidak ada area yang cocok.</p>
+                ) : (
+                  <div className="qs-areas" role="group" aria-label="Defect area">
+                    {areas.map((a) => {
+                      const n = areaTotal(a);
+                      return (
+                        <button
+                          key={a}
+                          type="button"
+                          className={`qs-area-chip ${n > 0 ? "has" : ""}`}
+                          onClick={() => { setArea(a); setAreaQuery(""); }}
+                        >
+                          <span>{a}</span>
+                          {n > 0 && <em>{n}</em>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
             )}
 
-            <p className="qs-sub">
-              2. Defect Type {area && <span className="qs-picked">· {area}</span>}
-            </p>
-            {area ? <TypeRows forArea={area} /> : (
+            <p className="qs-sub" ref={typesRef}>2. Hitung Defect Type</p>
+            {area ? (
+              <>
+                {showTypeSearch && (
+                  <SearchBox value={typeQuery} onChange={setTypeQuery} placeholder="Cari defect type…" />
+                )}
+                {renderTypes(area)}
+              </>
+            ) : (
               <p className="qs-empty">Pilih defect area terlebih dahulu.</p>
             )}
           </>
-        ) : types.length === 0 ? (
-          <p className="qs-empty">No defect types found.</p>
         ) : (
           <>
-            <p className="qs-sub">Defect Type</p>
-            <TypeRows forArea={null} />
+            <p className="qs-sub">Hitung Defect Type</p>
+            {showTypeSearch && (
+              <SearchBox value={typeQuery} onChange={setTypeQuery} placeholder="Cari defect type…" />
+            )}
+            {renderTypes(null)}
           </>
         )}
 
         {/* Ringkasan yang sudah dicatat */}
         {entries.length > 0 && (
           <section className="qs-recorded">
-            <p className="qs-sub">Dicatat ({total})</p>
+            <p className="qs-sub">Sudah dicatat ({total})</p>
             <ul>
               {entries.map(([key, e]) => (
                 <li key={key}>

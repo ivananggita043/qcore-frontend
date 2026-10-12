@@ -1,0 +1,122 @@
+.sx {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 40px 0 0;
+  background: #fff;
+}
+.sx-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 40px 24px 40px;
+}
+
+/* Ikon centang beranimasi */
+.sx-icon { width: 150px; height: 150px; }
+.sx-ring { stroke: rgba(14, 168, 74, 0.25); }
+.sx-circle { fill: #0ea84a; transform-origin: 60px 60px; animation: sx-pop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.3) both; }
+.sx-check { stroke: #fff; stroke-dasharray: 48; stroke-dashoffset: 48; animation: sx-draw 0.4s 0.35s ease forwards; }
+@keyframes sx-pop { from { transform: scale(0.6); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes sx-draw { to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .sx-check { stroke-dashoffset: 0 !important; }
+}
+
+.sx-title {
+  margin: 28px 0 0;
+  text-align: center;
+  font-weight: 600;
+  font-size: 26px;
+  line-height: 1.3;
+  color: var(--indigo);
+}
+.sx-title:focus { outline: none; }
+.sx-live {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+/* Nomor inspeksi */
+.sx-id {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 10px;
+  margin-top: 14px;
+}
+.sx-id .lbl { font-weight: 600; font-size: 20px; color: var(--orange); }
+.sx-id strong { font-size: 22px; letter-spacing: 0.02em; color: #d92d20; }
+.sx-id button {
+  height: 36px;
+  padding: 0 12px;
+  border: 1.5px solid var(--indigo);
+  border-radius: 18px;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  color: var(--indigo);
+  cursor: pointer;
+}
+.sx-id button:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+
+/* Kartu waktu */
+.sx-card, .sx-details {
+  width: 100%;
+  margin: 24px 0 0;
+  padding: 4px 18px;
+  border: 1px solid #e6e8f0;
+  border-radius: 16px;
+  background: #f6f7fb;
+}
+.sx-card div, .sx-details dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+}
+.sx-card div + div, .sx-details dl div + div { border-top: 1px solid #e6e8f0; }
+.sx dt { font-size: 15px; color: #666; }
+.sx dd { margin: 0; font-size: 16px; text-align: right; color: #1c1c1c; overflow-wrap: anywhere; }
+
+/* Detail */
+.sx-details { margin-top: 12px; padding: 4px 18px 16px; background: #fff; }
+.sx-details dl { margin: 0; }
+.sx-sub { margin: 12px 0 8px; font-size: 15px; font-weight: 600; color: var(--indigo); }
+.sx-details ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.sx-details li {
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #f6f7fb;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #262323;
+  overflow-wrap: anywhere;
+}
+.sx-none { margin: 0; font-size: 14px; color: #666; }
+
+/* Tombol */
+.sx-actions { display: grid; gap: 12px; width: 100%; margin-top: 28px; }
+.sx-actions button {
+  height: 56px;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 17px;
+  cursor: pointer;
+}
+.sx-primary { border: 0; background: var(--indigo); color: #fff; font-weight: 600; }
+.sx-primary:hover { filter: brightness(1.08); }
+.sx-secondary { border: 1.5px solid var(--indigo); background: #fff; color: var(--indigo); }
+.sx-secondary:hover { background: rgba(55, 72, 161, 0.06); }
+.sx-actions button:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; }
+
+@media (min-width: 768px) {
+  .sx { padding-top: 0; }
+  .sx-inner { max-width: 480px; padding-top: 64px; }
+}

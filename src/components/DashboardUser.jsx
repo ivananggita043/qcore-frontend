@@ -1,16 +1,57 @@
 import { useEffect, useRef, useState } from "react";
 import StatusBar from "./StatusBar.jsx";
-import { SECTIONS, WORK_HOURS, hourLabel, hourSlots } from "../config/sections.js";
+import {
+  SECTIONS,
+  WORK_HOURS,
+  hourLabel,
+  hourSlots,
+} from "../config/sections.js";
 import "./DashboardUser.css";
 
 /* ---------- helper tanggal ---------- */
-const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-const SHORT  = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sept","Oct","Nov","Dec"];
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+const SHORT = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sept",
+  "Oct",
+  "Nov",
+  "Dec",
+];
 const pad = (n) => String(n).padStart(2, "0");
-const toISO = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-const fromISO = (s) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
-const longDate = (s) => { const d = fromISO(s); return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`; };
-const shortDate = (s) => { const d = fromISO(s); return `${d.getDate()} ${SHORT[d.getMonth()]}`; };
+const toISO = (d) =>
+  `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const fromISO = (s) => {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
+};
+const longDate = (s) => {
+  const d = fromISO(s);
+  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+};
+const shortDate = (s) => {
+  const d = fromISO(s);
+  return `${d.getDate()} ${SHORT[d.getMonth()]}`;
+};
 
 /* ---------- data contoh (ganti dengan API) ---------- */
 // "hour" = jam yang dipilih saat input (dipakai section per jam),
@@ -21,27 +62,79 @@ const MOCK = {
   [TODAY]: {
     summary: { inspections: 5, defect: 13, defectPct: 7, qty: 200 },
     checks: [
-      { id: "QCUH2038", time: "10.00", hour: 10, status: "Finish", style: "VS", qty: 40 },
-      { id: "DR-2401",  time: "10.42", hour: 10, status: "Pass",   style: "EL", qty: 40 },
-      { id: "DR-2401",  time: "10.43", hour: 9,  status: "Pass",   style: "EL", qty: 40 },
-      { id: "DR-2401",  time: "10.43", hour: 8,  status: "Pass",   style: "EL", qty: 40 },
-      { id: "DR-2401",  time: "10.43", hour: 8,  status: "Pass",   style: "EL", qty: 40 },
+      {
+        id: "QCUH2038",
+        time: "10.00",
+        hour: 10,
+        status: "Finish",
+        style: "VS",
+        qty: 40,
+      },
+      {
+        id: "DR-2401",
+        time: "10.42",
+        hour: 10,
+        status: "Pass",
+        style: "EL",
+        qty: 40,
+      },
+      {
+        id: "DR-2401",
+        time: "10.43",
+        hour: 9,
+        status: "Pass",
+        style: "EL",
+        qty: 40,
+      },
+      {
+        id: "DR-2401",
+        time: "10.43",
+        hour: 8,
+        status: "Pass",
+        style: "EL",
+        qty: 40,
+      },
+      {
+        id: "DR-2401",
+        time: "10.43",
+        hour: 8,
+        status: "Pass",
+        style: "EL",
+        qty: 40,
+      },
     ],
   },
   [YESTERDAY]: {
     summary: { inspections: 2, defect: 4, defectPct: 3, qty: 80 },
     checks: [
-      { id: "DR-2399", time: "09.15", hour: 9,  status: "Pass", style: "EL", qty: 40 },
-      { id: "DR-2398", time: "14.30", hour: 14, status: "Pass", style: "VS", qty: 40 },
+      {
+        id: "DR-2399",
+        time: "09.15",
+        hour: 9,
+        status: "Pass",
+        style: "EL",
+        qty: 40,
+      },
+      {
+        id: "DR-2398",
+        time: "14.30",
+        hour: 14,
+        status: "Pass",
+        style: "VS",
+        qty: 40,
+      },
     ],
   },
 };
-const EMPTY = { summary: { inspections: 0, defect: 0, defectPct: 0, qty: 0 }, checks: [] };
+const EMPTY = {
+  summary: { inspections: 0, defect: 0, defectPct: 0, qty: 0 },
+  checks: [],
+};
 
 const MENU = [
-  { key: "home",    label: "HOME",       icon: "home" },
+  { key: "home", label: "HOME", icon: "home" },
   { key: "records", label: "QC RECORDS", icon: "records" },
-  { key: "profile", label: "PROFILE",    icon: "profile" },
+  { key: "profile", label: "PROFILE", icon: "profile" },
 ];
 
 export default function DashboardUser({
@@ -61,7 +154,8 @@ export default function DashboardUser({
   // Slot jam yang ditampilkan: semua jam yang sudah tiba (hari ini)
   // atau seluruh jam kerja (tanggal lampau), terbaru di atas.
   const nowHour = new Date().getHours();
-  const lastDue = date === TODAY ? Math.min(nowHour, WORK_HOURS.end - 1) : WORK_HOURS.end - 1;
+  const lastDue =
+    date === TODAY ? Math.min(nowHour, WORK_HOURS.end - 1) : WORK_HOURS.end - 1;
   const slots = hourSlots()
     .filter((h) => h <= lastDue || checks.some((c) => c.hour === h))
     .reverse();
@@ -100,7 +194,9 @@ export default function DashboardUser({
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen(true)}
           >
-            <span /><span /><span />
+            <span />
+            <span />
+            <span />
           </button>
         </header>
 
@@ -108,7 +204,15 @@ export default function DashboardUser({
         <div className="datepick">
           <button type="button" className="date-chip" onClick={openCalendar}>
             <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
-              <rect x="0.5" y="1.5" width="11" height="10" rx="1.5" fill="none" stroke="currentColor" />
+              <rect
+                x="0.5"
+                y="1.5"
+                width="11"
+                height="10"
+                rx="1.5"
+                fill="none"
+                stroke="currentColor"
+              />
               <rect x="0" y="3" width="12" height="2" fill="currentColor" />
             </svg>
             {longDate(date)}
@@ -138,11 +242,17 @@ export default function DashboardUser({
           </div>
         </section>
 
-        <button type="button" className="btn-primary" onClick={onNewCheck}>+ New QC Check</button>
-        <button type="button" className="btn-outline">History</button>
+        <button type="button" className="btn-primary" onClick={onNewCheck}>
+          + New QC Check
+        </button>
+        <button type="button" className="btn-outline">
+          History
+        </button>
 
         {/* Daftar check */}
-        <h2 className="recent-title">{hourly ? "Check per Jam" : "Recent Check"}</h2>
+        <h2 className="recent-title">
+          {hourly ? "Check per Jam" : "Recent Check"}
+        </h2>
 
         {hourly ? (
           slots.length === 0 ? (
@@ -151,19 +261,25 @@ export default function DashboardUser({
             <div className="hours">
               {slots.map((h) => {
                 const list = checks.filter((c) => c.hour === h);
+                if (list.length === 0) {
+                  return (
+                    <div key={h} className="hour-row">
+                      <b>{hourLabel(h)}</b>
+                      <small>Belum diisi</small>
+                    </div>
+                  );
+                }
                 return (
                   <section key={h} className="hour-group">
                     <h3 className="hour-head">
                       <span>{hourLabel(h)}</span>
-                      {list.length > 0 && <small>{list.length} check</small>}
+                      <small>{list.length} check</small>
                     </h3>
-                    {list.length > 0 ? (
-                      <ul className="checks">
-                        {list.map((c, i) => <CheckCard key={i} c={c} date={date} />)}
-                      </ul>
-                    ) : (
-                      <p className="hour-empty">Belum diisi</p>
-                    )}
+                    <ul className="checks">
+                      {list.map((c, i) => (
+                        <CheckCard key={i} c={c} date={date} />
+                      ))}
+                    </ul>
                   </section>
                 );
               })}
@@ -173,7 +289,9 @@ export default function DashboardUser({
           <p className="empty">No QC checks on this date.</p>
         ) : (
           <ul className="checks">
-            {checks.map((c, i) => <CheckCard key={i} c={c} date={date} />)}
+            {checks.map((c, i) => (
+              <CheckCard key={i} c={c} date={date} />
+            ))}
           </ul>
         )}
       </div>
@@ -189,7 +307,9 @@ export default function DashboardUser({
         aria-label="Main menu"
       >
         <div className="drawer-head">
-          <div className="avatar"><MenuIcon name="profile" size={32} /></div>
+          <div className="avatar">
+            <MenuIcon name="profile" size={32} />
+          </div>
           <div className="drawer-who">
             <p className="drawer-name">{user.code}</p>
             <p className="drawer-area">{user.area}</p>
@@ -201,7 +321,12 @@ export default function DashboardUser({
             onClick={() => setMenuOpen(false)}
           >
             <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
-              <path d="M3 3l12 12M15 3L3 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              <path
+                d="M3 3l12 12M15 3L3 15"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
             </svg>
           </button>
         </div>
@@ -227,9 +352,20 @@ export default function DashboardUser({
         </ul>
 
         <button type="button" className="logout" onClick={onLogout}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M9 4H5v16h4" /><path d="M16 8l4 4-4 4" /><path d="M20 12H9" />
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M9 4H5v16h4" />
+            <path d="M16 8l4 4-4 4" />
+            <path d="M20 12H9" />
           </svg>
           <span>LOG OUT</span>
         </button>
@@ -243,8 +379,12 @@ function CheckCard({ c, date }) {
     <li className="card check">
       <span className="check-id">{c.id}</span>
       <span className={`badge ${c.status.toLowerCase()}`}>{c.status}</span>
-      <span className="check-meta">{shortDate(date)} - {c.time}</span>
-      <span className="check-meta">{c.style} - {c.qty} pcs</span>
+      <span className="check-meta">
+        {shortDate(date)} - {c.time}
+      </span>
+      <span className="check-meta">
+        {c.style} - {c.qty} pcs
+      </span>
     </li>
   );
 }
@@ -260,9 +400,15 @@ function Stat({ value, label, red }) {
 
 function MenuIcon({ name, size = 24 }) {
   const p = {
-    width: size, height: size, viewBox: "0 0 24 24", fill: "none",
-    stroke: "currentColor", strokeWidth: 1.8,
-    strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true,
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.8,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    "aria-hidden": true,
   };
   if (name === "home")
     return (
