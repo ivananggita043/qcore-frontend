@@ -1,9 +1,10 @@
 const SECTIONS = ["cutting", "sewing", "washing", "finishing"];
-const ROLES = ["user", "admin"];
+const ROLES = ["user", "admin", "super_admin"];
 
 // Alat bantu pengembangan: pilih role dan section tanpa mengubah kode.
 // Hanya dirender saat `npm run dev` (lihat App.jsx).
-export default function DevSectionSwitcher({ section, role, onSection, onRole }) {
+// allowAll: untuk super_admin, tambah pilihan "semua" (= ringkasan semua section).
+export default function DevSectionSwitcher({ section, role, onSection, onRole, allowAll = false }) {
   const row = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 };
   const sel = { font: "inherit", padding: "2px 4px", borderRadius: 4 };
 
@@ -32,6 +33,7 @@ export default function DevSectionSwitcher({ section, role, onSection, onRole })
       <label style={row}>
         DEV · section
         <select value={section} onChange={(e) => onSection(e.target.value)} style={sel}>
+          {allowAll && <option value="">semua</option>}
           {SECTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
       </label>

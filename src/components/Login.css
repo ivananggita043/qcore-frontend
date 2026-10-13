@@ -136,3 +136,15 @@
 @media (max-height: 700px) and (max-width: 767px) {
   .login { padding-top: 64px; }
 }
+
+.login-error,
+.login-notice {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.login-error { background: #fdecea; border: 1px solid #f5c2bd; color: #b42318; }
+.login-notice { background: #eef1fb; border: 1px solid #d6dcf3; color: var(--indigo); }
+.signin:disabled { opacity: 0.7; cursor: wait; filter: none; }

@@ -1,0 +1,30 @@
+.soon { padding-top: 8px; }
+.soon-back {
+  margin: 4px 0 0;
+  padding: 10px 16px;
+  border: 1px solid #c9cde0;
+  border-radius: 999px;
+  background: #fff;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  color: #3748a1;
+  cursor: pointer;
+}
+.soon-back:focus-visible { outline: 3px solid #ff9d00; outline-offset: 2px; }
+.soon-title {
+  margin: 20px 0 16px;
+  font-size: 28px;
+  font-weight: 600;
+  color: #3748a1;
+}
+.soon-card {
+  padding: 28px 20px;
+  border: 1px solid #c9cde0;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 3px 8px rgba(30, 20, 128, 0.12);
+  text-align: center;
+}
+.soon-big { margin: 0 0 8px; font-size: 22px; font-weight: 600; color: #1e1480; }
+.soon-text { margin: 0; font-size: 16px; line-height: 1.5; color: #6b6f85; }

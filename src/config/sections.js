@@ -3,6 +3,7 @@ export const SECTIONS = {
   sewing:    { label: "Sewing",    frequency: "hourly", flow: "standard" },
   washing:   { label: "Washing",   frequency: "hourly", flow: "standard" },
   finishing: { label: "Finishing", frequency: "daily",  flow: "standard" },
+  packing:   { label: "Packing",   frequency: "daily",  flow: "standard" },
 };
 
 // 24 jam kerja: slot 00.00 sampai 23.00 (slot terakhir 23.00 – 00.00)

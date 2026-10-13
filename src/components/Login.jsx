@@ -1,14 +1,27 @@
 import { useState } from "react";
 import StatusBar from "./StatusBar.jsx";
+import { login } from "../api/auth.js";
 import "./Login.css";
 
-export default function Login({ onLogin }) {
+export default function Login({ notice = "", onLogin }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onLogin?.({ username, password });
+    if (loading) return;
+    setError("");
+    setLoading(true);
+    try {
+      const session = await login(username, password);
+      onLogin?.(session);
+    } catch (err) {
+      setError(err?.message || "Login gagal. Silakan coba lagi.");
+      setPassword("");
+      setLoading(false);
+    }
   };
 
   return (
@@ -38,9 +51,14 @@ export default function Login({ onLogin }) {
               type="text"
               name="username"
               autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              maxLength={10}
               placeholder="enter your username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              disabled={loading}
               required
             />
           </label>
@@ -54,13 +72,19 @@ export default function Login({ onLogin }) {
               placeholder="enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
               required
             />
           </label>
 
           <a className="forgot" href="#">Forgot password?</a>
 
-          <button type="submit" className="signin">Sign in</button>
+          {error && <p className="login-error" role="alert">{error}</p>}
+          {!error && notice && <p className="login-notice" role="status">{notice}</p>}
+
+          <button type="submit" className="signin" disabled={loading}>
+            {loading ? "Memproses…" : "Sign in"}
+          </button>
         </form>
 
         <p className="contact">

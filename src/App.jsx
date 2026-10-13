@@ -1,35 +1,39 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import SplashScreen from "./components/SplashScreen.jsx";
 import Login from "./components/Login.jsx";
 import DashboardUser from "./components/DashboardUser.jsx";
 import AdminDashboard from "./components/AdminDashboard.jsx";
+import SuperAdminDashboard from "./components/SuperAdminDashboard.jsx";
 import NewQcCheck from "./components/NewQcCheck.jsx";
 import QcStandard from "./components/QcStandard.jsx";
 import CuttingCheck from "./components/CuttingCheck.jsx";
 import Success from "./components/Success.jsx";
 import Profile from "./components/Profile.jsx";
+import Report from "./components/Report.jsx";
+import ComingSoon from "./components/ComingSoon.jsx";
 import DevSectionSwitcher from "./dev/DevSectionSwitcher.jsx"; // hapus saat tidak dipakai lagi
 import { SECTIONS, hourLabel } from "./config/sections.js";
+import { PAGE_TITLE } from "./config/menus.js";
+import { clearSession, loadSession } from "./auth/session.js";
+import { setUnauthorizedHandler } from "./api/client.js";
 
-// Data contoh pengguna (nanti dari API setelah login)
-const BASE_USER = {
-  code: "QCSWGLN03",
-  status: "Active",
-  nik: "33563829274736",
-  name: "Jane Doe",
-  line: "3",
-};
+const PROTECTED = [
+  "dashboard", "profile", "newcheck", "qcsewing", "cutting", "success", "soon", "reports",
+];
+const ROLE_LABEL = { user: "QC Line", admin: "Admin", super_admin: "Super Admin" };
 
 // Nomor inspeksi sementara (TODO: seharusnya dibuat oleh server)
-const PREFIX = { cutting: "CUT", sewing: "SEW", washing: "WSH", finishing: "FIN" };
+const PREFIX = {
+  cutting: "CUT", sewing: "SEW", washing: "WSH", finishing: "FIN", packing: "PCK",
+};
 
-// Mode dev: section dan role bisa dipilih lewat kotak DEV atau URL,
-// mis. /?section=cutting&role=admin. Di build produksi nilainya tetap
-// (TODO: ambil dari API login, jangan pernah dari URL).
-function fromQuery(key, allowed, fallback) {
-  if (!import.meta.env.DEV) return fallback;
+// Hanya mode dev: role/section bisa diganti lewat kotak DEV atau URL,
+// mis. /?section=cutting&role=admin. Di build produksi selalu null,
+// sehingga role dan section murni dari akun yang login.
+function fromQuery(key, allowed) {
+  if (!import.meta.env.DEV) return null;
   const q = new URLSearchParams(window.location.search).get(key);
-  return q && allowed.includes(q) ? q : fallback;
+  return q && allowed.includes(q) ? q : null;
 }
 
 function syncUrl(key, value) {
@@ -91,27 +95,73 @@ function buildCuttingResult(data) {
 
 export default function App() {
   const [screen, setScreen] = useState("splash");
+  const [session, setSession] = useState(loadSession); // dari sessionStorage (jika masih berlaku)
+  const [notice, setNotice] = useState("");
   const [job, setJob] = useState(null); // data dari form New QC Check
   const [result, setResult] = useState(null); // hasil submit untuk halaman sukses
-  const [section, setSection] = useState(() =>
-    fromQuery("section", Object.keys(SECTIONS), "sewing")
-  );
-  const [role, setRole] = useState(() => fromQuery("role", ["user", "admin"], "user"));
+  const [devSection, setDevSection] = useState(() => fromQuery("section", Object.keys(SECTIONS)));
+  const [devRole, setDevRole] = useState(() => fromQuery("role", ["user", "admin", "super_admin"]));
+  const [viewSection, setViewSection] = useState(null); // section yang sedang dibuka super admin
+  const [soonPage, setSoonPage] = useState(null); // menu yang halamannya belum dibuat
 
-  const cfg = SECTIONS[section];
+  // Role dan section dari akun yang login (kecuali di-override kotak DEV)
+  const su = session?.user;
+  const roleKey = devRole ?? su?.role ?? "user";
+  const isSuper = roleKey === "super_admin";
+  const role = roleKey === "user" ? "user" : "admin"; // super_admin memakai tampilan admin saat membuka satu section
   const isAdmin = role === "admin";
+  const section = viewSection ?? devSection ?? (su && SECTIONS[su.section] ? su.section : "sewing");
+  const cfg = SECTIONS[section];
+  const onSuperOverview = isSuper && !viewSection;
+
   const user = {
-    ...BASE_USER,
+    id: su?.id,
+    code: su?.username ?? "-",
+    name: su?.nama ?? "-",
+    nik: "-", // belum ada di respons login (tersedia lewat GET /auth/me)
+    status: su && su.active === false ? "Inactive" : "Active",
+    role: ROLE_LABEL[roleKey] ?? "QC Line",
     section,
-    role: isAdmin ? "Admin" : "QC Line",
-    code: isAdmin ? `ADM${PREFIX[section]}01` : BASE_USER.code,
     process: cfg.label,
-    area: isAdmin
+    area: onSuperOverview
+      ? "ALL SECTIONS"
+      : isAdmin
       ? `${cfg.label.toUpperCase()} QC`
-      : `${cfg.label.toUpperCase()} . LINE ${BASE_USER.line}`,
+      : cfg.label.toUpperCase(),
+    line: su?.lineIds?.length ? `${su.lineIds.length} line` : "-",
   };
 
-  // keluar dari layar pemeriksaan yang sedang terbuka saat role/section diganti
+  const handleLogout = useCallback((message = "") => {
+    clearSession();
+    setSession(null);
+    setJob(null);
+    setResult(null);
+    setViewSection(null);
+    setSoonPage(null);
+    setNotice(message);
+    setScreen("login");
+  }, []);
+
+  // keluar otomatis saat token kedaluwarsa (backend: 1 jam)
+  useEffect(() => {
+    if (!session) return;
+    const ms = Math.max(session.expiresAt - Date.now(), 0);
+    const t = setTimeout(
+      () => handleLogout("Sesi login sudah berakhir. Silakan login lagi."),
+      ms
+    );
+    return () => clearTimeout(t);
+  }, [session, handleLogout]);
+
+  // keluar bila server menolak token (401)
+  useEffect(() => {
+    setUnauthorizedHandler(() =>
+      handleLogout("Sesi login sudah berakhir. Silakan login lagi.")
+    );
+    return () => setUnauthorizedHandler(null);
+  }, [handleLogout]);
+
+  // keluar dari layar pemeriksaan yang sedang terbuka saat role/section DEV diganti
   const leaveCheckScreens = () => {
     if (["cutting", "newcheck", "qcsewing", "success"].includes(screen)) {
       setJob(null);
@@ -119,21 +169,42 @@ export default function App() {
       setScreen("dashboard");
     }
   };
-
-  // hanya dipanggil dari kotak DEV
   const changeSection = (next) => {
-    setSection(next);
+    if (next === "") {
+      // pilihan "semua" (hanya super admin): kembali ke ringkasan
+      setViewSection(null);
+      leaveCheckScreens();
+      return;
+    }
+    setDevSection(next);
     syncUrl("section", next);
+    if (isSuper) setViewSection(next);
     leaveCheckScreens();
   };
   const changeRole = (next) => {
-    setRole(next);
+    setDevRole(next);
     syncUrl("role", next);
+    setViewSection(null);
     leaveCheckScreens();
   };
 
+  // menu hamburger untuk admin dan super admin
+  const goAdminMenu = (key) => {
+    if (key === "profile") return setScreen("profile");
+    if (key === "reports") return setScreen("reports");
+    if (key === "home") {
+      if (isSuper) setViewSection(null);
+      return setScreen("dashboard");
+    }
+    setSoonPage(key); // records, users (halamannya belum dibuat)
+    setScreen("soon");
+  };
+
   const renderScreen = () => {
-    if (screen === "success" && result) {
+    // halaman yang butuh login: tanpa sesi, kembali ke login
+    const current = !session && PROTECTED.includes(screen) ? "login" : screen;
+
+    if (current === "success" && result) {
       return (
         <Success
           result={result}
@@ -145,16 +216,31 @@ export default function App() {
       );
     }
 
-    if (screen === "profile") {
+    if (current === "reports") {
+      return (
+        <Report user={user} isSuper={isSuper} onBack={() => setScreen("dashboard")} />
+      );
+    }
+
+    if (current === "soon") {
+      return (
+        <ComingSoon
+          title={PAGE_TITLE[soonPage] ?? "Segera hadir"}
+          onBack={() => setScreen("dashboard")}
+        />
+      );
+    }
+
+    if (current === "profile") {
       return <Profile user={user} onBack={() => setScreen("dashboard")} />;
     }
 
-    if (screen === "cutting") {
+    if (current === "cutting") {
       return (
         <CuttingCheck
           onBack={() => setScreen("dashboard")}
           onFinish={(data) => {
-            // TODO: kirim ke API (waktu submit sebaiknya dicatat server)
+            // TODO: kirim ke POST /cutting-inspections (waktu submit dicatat server)
             console.log("cutting QC:", data);
             setResult(buildCuttingResult(data));
             setScreen("success");
@@ -163,7 +249,7 @@ export default function App() {
       );
     }
 
-    if (screen === "qcsewing" && job) {
+    if (current === "qcsewing" && job) {
       return (
         <QcStandard
           job={job}
@@ -171,7 +257,7 @@ export default function App() {
           sectionLabel={cfg.label}
           onBack={() => setScreen("newcheck")}
           onSubmit={(data) => {
-            // TODO: kirim ke API. Waktu submit sebaiknya dicatat server.
+            // TODO: kirim ke POST /inspections (waktu submit dicatat server)
             console.log("submit QC:", { section, date: todayISO(), ...data });
             setResult(buildStandardResult(section, cfg.label, data));
             setJob(null);
@@ -181,7 +267,7 @@ export default function App() {
       );
     }
 
-    if (screen === "newcheck") {
+    if (current === "newcheck") {
       return (
         <NewQcCheck
           hourly={cfg.frequency === "hourly"}
@@ -194,36 +280,54 @@ export default function App() {
       );
     }
 
-    if (screen === "dashboard") {
+    if (current === "dashboard") {
       const goProfile = (key) => key === "profile" && setScreen("profile");
+
+      // super admin: ringkasan semua section
+      if (onSuperOverview) {
+        return (
+          <SuperAdminDashboard
+            user={user}
+            onNavigate={goAdminMenu}
+            onOpenSection={(key) => setViewSection(key)}
+            onLogout={() => handleLogout()}
+          />
+        );
+      }
+
       return isAdmin ? (
         <AdminDashboard
           user={user}
-          onNavigate={goProfile}
-          onLogout={() => setScreen("login")}
+          onNavigate={goAdminMenu}
+          onBack={isSuper ? () => setViewSection(null) : undefined}
+          onLogout={() => handleLogout()}
         />
       ) : (
         <DashboardUser
           user={user}
           onNewCheck={() => setScreen(cfg.flow === "cutting" ? "cutting" : "newcheck")}
           onNavigate={goProfile}
-          onLogout={() => setScreen("login")}
+          onLogout={() => handleLogout()}
         />
       );
     }
 
-    if (screen === "login") {
+    if (current === "login") {
       return (
         <Login
-          onLogin={() => {
-            // TODO: panggil API login, lalu pilih dashboard sesuai role/section
+          notice={notice}
+          onLogin={(s) => {
+            setSession(s);
+            setNotice("");
             setScreen("dashboard");
           }}
         />
       );
     }
 
-    return <SplashScreen onContinue={() => setScreen("login")} />;
+    return (
+      <SplashScreen onContinue={() => setScreen(session ? "dashboard" : "login")} />
+    );
   };
 
   return (
@@ -231,10 +335,11 @@ export default function App() {
       {renderScreen()}
       {import.meta.env.DEV && (
         <DevSectionSwitcher
-          section={section}
-          role={role}
-          onSection={changeSection}
+          role={roleKey}
+          section={onSuperOverview ? "" : section}
+          allowAll={isSuper}
           onRole={changeRole}
+          onSection={changeSection}
         />
       )}
     </>
