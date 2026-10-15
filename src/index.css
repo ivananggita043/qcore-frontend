@@ -19,3 +19,11 @@ body {
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
+
+:root { --top-gap: 16px; }
+
+.dash-inner,
+.pf-head,
+.login-inner {
+  padding-top: max(var(--top-gap), env(safe-area-inset-top));
+}

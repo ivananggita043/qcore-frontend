@@ -1,9 +1,11 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { MENU_SUPER } from "../config/menus.js";
+import { superDay } from "../mock/dashboardData.js";
 import StatusBar from "./StatusBar";
 import MenuDrawer from "./MenuDrawer";
 import "./AdminDashboard.css";
 import "./SuperAdminDashboard.css";
+import BuyerPerformance from "./BuyerPerformance.jsx";
 
 /* ---------- helper tanggal ---------- */
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -21,71 +23,9 @@ const greeting = () => {
 const num = (n) => Number(n).toLocaleString("id-ID");                 // 1234 -> 1.234
 const pct = (n) => `${Number(n).toLocaleString("id-ID", { maximumFractionDigits: 1 })}%`; // 98.8 -> 98,8%
 
-/* ---------- data contoh (ganti dengan API) ---------- */
 const TODAY = toISO(new Date());
-const YESTERDAY = toISO(new Date(Date.now() - 864e5));
-
-// delta: perubahan dibanding hari sebelumnya, dalam persen (positif = naik)
-const MOCK = {
-  [TODAY]: {
-    kpi: {
-      inspections: { value: 1234, delta: 32 },
-      passRate:    { value: 98.8, delta: 1.5 },
-      defects:     { value: 54,   delta: 8 },
-      activeQc:    { value: 18,   delta: 3 },
-    },
-    sections: [
-      { key: "cutting",   name: "Cutting",   pct: 89, inspections: 210, defects: 9 },
-      { key: "sewing",    name: "Sewing",    pct: 89, inspections: 520, defects: 24 },
-      { key: "washing",   name: "Washing",   pct: 89, inspections: 280, defects: 12 },
-      { key: "finishing", name: "Finishing", pct: 89, inspections: 224, defects: 9 },
-      // { key: "packing", name: "Packing", pct: 0, inspections: 0, defects: 0 },
-    ],
-    topDefects: [
-      { name: "Skip Stitch", count: 14 },
-      { name: "Broken Stitch", count: 11 },
-      { name: "Uneven Hem", count: 8 },
-    ],
-  },
-  [YESTERDAY]: {
-    kpi: {
-      inspections: { value: 935,  delta: -4 },
-      passRate:    { value: 97.3, delta: -0.8 },
-      defects:     { value: 50,   delta: -12 },
-      activeQc:    { value: 17,   delta: 0 },
-    },
-    sections: [
-      { key: "cutting",   name: "Cutting",   pct: 93, inspections: 190, defects: 5 },
-      { key: "sewing",    name: "Sewing",    pct: 82, inspections: 400, defects: 26 },
-      { key: "washing",   name: "Washing",   pct: 78, inspections: 190, defects: 12 },
-      { key: "finishing", name: "Finishing", pct: 95, inspections: 155, defects: 7 },
-    ],
-    topDefects: [
-      { name: "Broken Stitch", count: 15 },
-      { name: "Skip Stitch", count: 12 },
-      { name: "Stain", count: 7 },
-    ],
-  },
-};
-const EMPTY = {
-  kpi: {
-    inspections: { value: 0, delta: 0 },
-    passRate: { value: 0, delta: 0 },
-    defects: { value: 0, delta: 0 },
-    activeQc: { value: 0, delta: 0 },
-  },
-  sections: [],
-  topDefects: [],
-};
 
 const level = (p) => (p >= 90 ? "good" : p >= 80 ? "warn" : "bad");
-
-const MENU = [
-  { key: "home",    label: "HOME",       icon: "home" },
-  { key: "records", label: "QC RECORDS", icon: "records" },
-  { key: "users",   label: "USERS",      icon: "users" },
-  { key: "profile", label: "PROFILE",    icon: "profile" },
-];
 
 export default function SuperAdminDashboard({ user, onNavigate, onOpenSection, onLogout }) {
   const [date, setDate] = useState(TODAY);
@@ -93,7 +33,7 @@ export default function SuperAdminDashboard({ user, onNavigate, onOpenSection, o
   const [page, setPage] = useState("home");
   const dateRef = useRef(null);
 
-  const { kpi, sections, topDefects } = MOCK[date] ?? EMPTY;
+  const { kpi, sections, topDefects } = useMemo(() => superDay(date), [date]);
   const isToday = date === TODAY;
   const maxDefect = Math.max(1, ...topDefects.map((d) => d.count));
 
@@ -215,6 +155,7 @@ export default function SuperAdminDashboard({ user, onNavigate, onOpenSection, o
             </ul>
           </>
         )}
+        <BuyerPerformance sections={["cutting", "sewing", "washing", "finishing"]} date={date} />
       </div>
 
       <MenuDrawer

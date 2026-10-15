@@ -1,38 +1,20 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { MENU_ADMIN, MENU_SUPER } from "../config/menus.js";
+import { adminDay } from "../mock/dashboardData.js";
 import StatusBar from "./StatusBar.jsx";
 import MenuDrawer from "./MenuDrawer.jsx";
 import "./DashboardUser.css";
 import "./AdminDashboard.css";
+import BuyerPerformance from "./BuyerPerformance.jsx";
 
 /* ---------- helper tanggal ---------- */
 const MONTHS = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
 ];
 const SHORT = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sept",
-  "Oct",
-  "Nov",
-  "Dec",
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sept", "Oct", "Nov", "Dec",
 ];
 const pad = (n) => String(n).padStart(2, "0");
 const toISO = (d) =>
@@ -58,45 +40,19 @@ const greeting = () => {
   return "Selamat malam";
 };
 
-/* ---------- data contoh (ganti dengan API) ---------- */
 const TODAY = toISO(new Date());
-const YESTERDAY = toISO(new Date(Date.now() - 864e5));
-const MOCK = {
-  [TODAY]: {
-    overview: { inspections: 1, defect: 13, passRate: 98, total: 40 },
-    lines: [
-      { name: "Line 01", pct: 89 },
-      { name: "Line 02", pct: 89 },
-      { name: "Line 03", pct: 89 },
-      { name: "Line 04", pct: 89 },
-    ],
-  },
-  [YESTERDAY]: {
-    overview: { inspections: 2, defect: 4, passRate: 97, total: 80 },
-    lines: [
-      { name: "Line 01", pct: 93 },
-      { name: "Line 02", pct: 86 },
-      { name: "Line 03", pct: 78 },
-      { name: "Line 04", pct: 95 },
-    ],
-  },
-};
-const EMPTY = {
-  overview: { inspections: 0, defect: 0, passRate: 0, total: 0 },
-  lines: [],
-};
 
 // 90% ke atas hijau, 80-89% oranye, di bawah 80% merah
 const level = (p) => (p >= 90 ? "good" : p >= 80 ? "warn" : "bad");
 
-
-export default function AdminDashboard({ user, onNavigate, onBack, onLogout }) {
+export default function AdminDashboard({ user, section, onNavigate, onBack, onLogout }) {
   const [date, setDate] = useState(TODAY);
   const [menuOpen, setMenuOpen] = useState(false);
   const [page, setPage] = useState("home");
   const dateRef = useRef(null);
 
-  const { overview, lines } = MOCK[date] ?? EMPTY;
+  const sec = String(section ?? user.section ?? user.process ?? "sewing").toLowerCase();
+  const { overview, lines } = useMemo(() => adminDay(sec, date), [sec, date]);
   const isToday = date === TODAY;
 
   const openCalendar = () => {
@@ -120,7 +76,7 @@ export default function AdminDashboard({ user, onNavigate, onBack, onLogout }) {
             <h1 className="dash-greeting">
               {greeting()}, <span className="code">Admin!</span>
             </h1>
-            <p className="dash-area">{(user.process ?? "").toUpperCase()} QC</p>
+            <p className="dash-area">{sec.toUpperCase()} QC</p>
           </div>
           <button
             type="button"
@@ -214,6 +170,7 @@ export default function AdminDashboard({ user, onNavigate, onBack, onLogout }) {
             </p>
           </>
         )}
+       <BuyerPerformance sections={[sec]} date={date} />
       </div>
 
       <MenuDrawer

@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import StatusBar from "./StatusBar.jsx";
+import { fetchMe } from "../api/users.js";
 import "./Profile.css";
 
 const DETAILS = [
@@ -10,6 +12,24 @@ const DETAILS = [
 
 export default function Profile({ user, onBack }) {
   const active = user.status?.toLowerCase() === "active";
+
+  // undefined = memuat, string = hasil dari /auth/me
+  const [nik, setNik] = useState(undefined);
+
+  useEffect(() => {
+    const ac = new AbortController();
+    fetchMe(ac.signal)
+      .then((me) => setNik(me?.nik || ""))
+      .catch((e) => {
+        if (e.name !== "AbortError") setNik("");
+      });
+    return () => ac.abort();
+  }, []);
+
+  const data = {
+    ...user,
+    nik: nik === undefined ? "Memuat…" : nik || user.nik || "-",
+  };
 
   return (
     <main className="profile">
@@ -42,11 +62,11 @@ export default function Profile({ user, onBack }) {
           </div>
 
           <div className="pf-id">
-            <p className="pf-code">{user.code}</p>
-            <p className="pf-role">{user.role}</p>
+            <p className="pf-code">{data.code}</p>
+            <p className="pf-role">{data.role}</p>
             <span className={`pf-status ${active ? "on" : "off"}`}>
               <i aria-hidden="true" />
-              {user.status}
+              {data.status}
             </span>
           </div>
         </section>
@@ -55,7 +75,7 @@ export default function Profile({ user, onBack }) {
           {DETAILS.map((d) => (
             <div key={d.key} className="pf-row">
               <dt>{d.label}</dt>
-              <dd>{user[d.key]}</dd>
+              <dd>{data[d.key]}</dd>
             </div>
           ))}
         </dl>

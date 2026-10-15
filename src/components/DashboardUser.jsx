@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import StatusBar from "./StatusBar.jsx";
 import {
   SECTIONS,
@@ -6,36 +6,17 @@ import {
   hourLabel,
   hourSlots,
 } from "../config/sections.js";
+import { userDay } from "../mock/dashboardData.js";
 import "./DashboardUser.css";
 
 /* ---------- helper tanggal ---------- */
 const MONTHS = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
 ];
 const SHORT = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sept",
-  "Oct",
-  "Nov",
-  "Dec",
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sept", "Oct", "Nov", "Dec",
 ];
 const pad = (n) => String(n).padStart(2, "0");
 const toISO = (d) =>
@@ -53,83 +34,7 @@ const shortDate = (s) => {
   return `${d.getDate()} ${SHORT[d.getMonth()]}`;
 };
 
-/* ---------- data contoh (ganti dengan API) ---------- */
-// "hour" = jam yang dipilih saat input (dipakai section per jam),
-// "time" = waktu saat Submit ditekan.
 const TODAY = toISO(new Date());
-const YESTERDAY = toISO(new Date(Date.now() - 864e5));
-const MOCK = {
-  [TODAY]: {
-    summary: { inspections: 5, defect: 13, defectPct: 7, qty: 200 },
-    checks: [
-      {
-        id: "QCUH2038",
-        time: "10.00",
-        hour: 10,
-        status: "Finish",
-        style: "VS",
-        qty: 40,
-      },
-      {
-        id: "DR-2401",
-        time: "10.42",
-        hour: 10,
-        status: "Pass",
-        style: "EL",
-        qty: 40,
-      },
-      {
-        id: "DR-2401",
-        time: "10.43",
-        hour: 9,
-        status: "Pass",
-        style: "EL",
-        qty: 40,
-      },
-      {
-        id: "DR-2401",
-        time: "10.43",
-        hour: 8,
-        status: "Pass",
-        style: "EL",
-        qty: 40,
-      },
-      {
-        id: "DR-2401",
-        time: "10.43",
-        hour: 8,
-        status: "Pass",
-        style: "EL",
-        qty: 40,
-      },
-    ],
-  },
-  [YESTERDAY]: {
-    summary: { inspections: 2, defect: 4, defectPct: 3, qty: 80 },
-    checks: [
-      {
-        id: "DR-2399",
-        time: "09.15",
-        hour: 9,
-        status: "Pass",
-        style: "EL",
-        qty: 40,
-      },
-      {
-        id: "DR-2398",
-        time: "14.30",
-        hour: 14,
-        status: "Pass",
-        style: "VS",
-        qty: 40,
-      },
-    ],
-  },
-};
-const EMPTY = {
-  summary: { inspections: 0, defect: 0, defectPct: 0, qty: 0 },
-  checks: [],
-};
 
 const MENU = [
   { key: "home", label: "HOME", icon: "home" },
@@ -142,13 +47,17 @@ export default function DashboardUser({
   onLogout,
   onNavigate,
   onNewCheck,
+  onHistory,
 }) {
   const [date, setDate] = useState(TODAY);
   const [menuOpen, setMenuOpen] = useState(false);
   const [page, setPage] = useState("home");
   const dateRef = useRef(null);
 
-  const { summary, checks } = MOCK[date] ?? EMPTY;
+  const { summary, checks } = useMemo(
+    () => userDay(user.section ?? "sewing", date),
+    [user.section, date]
+  );
   const hourly = SECTIONS[user.section]?.frequency === "hourly";
 
   // Slot jam yang ditampilkan: semua jam yang sudah tiba (hari ini)
@@ -245,7 +154,7 @@ export default function DashboardUser({
         <button type="button" className="btn-primary" onClick={onNewCheck}>
           + New QC Check
         </button>
-        <button type="button" className="btn-outline">
+        <button type="button" className="btn-outline" onClick={onHistory}>
           History
         </button>
 
