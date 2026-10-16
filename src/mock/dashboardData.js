@@ -284,3 +284,139 @@ export function buyerPerformance(sections, iso) {
     };
   }).filter((b) => b.inspections > 0);
 }
+
+/* ================= data untuk halaman Statistik (data tiruan) ================= */
+const HOURLY = ["sewing", "washing"]; // section yang dicek per jam
+
+const isoList = (endISO, days) =>
+  Array.from({ length: days }, (_, i) =>
+    dayKey(new Date(asDate(endISO).getTime() - (days - 1 - i) * 864e5))
+  );
+const validSecs = (sections) => sections.filter((s) => SECTION_PROFILE[s]);
+const rateFrom = (d, i) => (i ? +((d / i) * 100).toFixed(1) : 0);
+
+// 1. Tren defect rate per section
+export function statsTrend(sections, endISO, days) {
+  const dates = isoList(endISO, days);
+  let inspections = 0;
+  let defects = 0;
+  const series = validSecs(sections).map((sec) => ({
+    section: sec,
+    name: NAMES[sec],
+    values: dates.map((iso) => {
+      const s = sectionStats(sec, asDate(iso));
+      inspections += s.inspections;
+      defects += s.defects;
+      return rateFrom(s.defects, s.inspections);
+    }),
+  }));
+  return { dates, series, totals: { inspections, defects, rate: rateFrom(defects, inspections) } };
+}
+
+// 2. Defect rate per jam (hanya section yang dicek per jam)
+export function statsHourly(sections, endISO, days) {
+  const secs = validSecs(sections).filter((s) => HOURLY.includes(s));
+  const hours = hourSlots();
+  const acc = hours.map((h) => ({ hour: h, inspections: 0, defects: 0 }));
+  isoList(endISO, days).forEach((iso) =>
+    secs.forEach((sec) => {
+      const s = sectionStats(sec, asDate(iso));
+      const r = rng(`${iso}:${sec}:hourly`);
+      const w = hours.map(() => 0.7 + r() * 0.6);
+      const wSum = w.reduce((a, b) => a + b, 0);
+      const base = s.defects / Math.max(1, s.inspections);
+      hours.forEach((h, i) => {
+        const insp = (s.inspections * w[i]) / wSum;
+        const bias = i === 0 ? 0.85 : h >= 13 && h <= 14 ? 1.35 : i === hours.length - 1 ? 1.3 : 1;
+        acc[i].inspections += insp;
+        acc[i].defects += insp * base * bias;
+      });
+    })
+  );
+  return {
+    applicable: secs.length > 0,
+    hours: acc.map((a) => ({
+      hour: a.hour,
+      inspections: Math.round(a.inspections),
+      defects: Math.round(a.defects),
+      rate: a.inspections ? +((a.defects / a.inspections) * 100).toFixed(1) : 0,
+    })),
+  };
+}
+
+// 3. Jenis defect terbanyak (Pareto)
+export function statsDefects(sections, endISO, days) {
+  const m = {};
+  isoList(endISO, days).forEach((iso) =>
+    validSecs(sections).forEach((sec) =>
+      sectionStats(sec, asDate(iso)).topDefects.forEach(
+        (d) => (m[d.name] = (m[d.name] || 0) + d.count)
+      )
+    )
+  );
+  const list = Object.entries(m)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+  const total = list.reduce((a, b) => a + b.count, 0);
+  let cum = 0;
+  return {
+    total,
+    rows: list.slice(0, 8).map((r) => {
+      cum += r.count;
+      return {
+        ...r,
+        share: total ? +((r.count / total) * 100).toFixed(1) : 0,
+        cum: total ? Math.round((cum / total) * 100) : 0,
+      };
+    }),
+  };
+}
+
+// 4. Perbandingan: satu section -> per line, banyak section -> per section
+export function statsLines(sections, endISO, days) {
+  const secs = validSecs(sections);
+  const dates = isoList(endISO, days);
+  if (secs.length > 1) {
+    return {
+      kind: "section",
+      rows: secs
+        .map((sec) => {
+          let i = 0;
+          let d = 0;
+          dates.forEach((iso) => {
+            const s = sectionStats(sec, asDate(iso));
+            i += s.inspections;
+            d += s.defects;
+          });
+          return { name: NAMES[sec], rate: rateFrom(d, i), inspections: i };
+        })
+        .sort((a, b) => b.rate - a.rate),
+    };
+  }
+  const sec = secs[0] ?? "sewing";
+  const n = SECTION_PROFILE[sec].lines;
+  const bias = Array.from({ length: n }, (_, k) => 0.6 + rng(`${sec}:line${k}:bias`)() * 0.9);
+  const rows = bias
+    .map((b, k) => {
+      let sum = 0;
+      dates.forEach((iso) => {
+        const s = sectionStats(sec, asDate(iso));
+        const j = 0.9 + rng(`${iso}:${sec}:line${k}`)() * 0.2;
+        sum += rateFrom(s.defects, s.inspections) * b * j;
+      });
+      return { name: `Line ${pad2(k + 1)}`, rate: +(sum / dates.length).toFixed(1) };
+    })
+    .sort((a, b) => b.rate - a.rate);
+  return { kind: "line", rows };
+}
+
+// 5. Volume inspeksi per hari (jumlah check)
+export function statsVolume(sections, endISO, days) {
+  const dates = isoList(endISO, days);
+  return {
+    dates,
+    values: dates.map((iso) =>
+      validSecs(sections).reduce((a, sec) => a + sectionStats(sec, asDate(iso)).inspections, 0)
+    ),
+  };
+}

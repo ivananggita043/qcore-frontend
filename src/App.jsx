@@ -19,6 +19,7 @@ import { setUnauthorizedHandler } from "./api/client.js";
 import Users from "./components/Users.jsx";
 import History from "./components/History.jsx";
 import Records from "./components/Records.jsx";
+import Stats from "./components/Stats.jsx";
 
 const PROTECTED = [
   "dashboard",
@@ -32,6 +33,7 @@ const PROTECTED = [
   "users",
   "history",
   "records",
+  "stats"
 ];
 const ROLE_LABEL = {
   user: "QC Line",
@@ -229,6 +231,7 @@ export default function App() {
     if (key === "reports") return setScreen("reports");
     if (key === "users") return setScreen("users");
     if (key === "records") return setScreen("records");
+    if (key === "stats") return setScreen("stats");
     if (key === "home") {
       if (isSuper) setViewSection(null);
       return setScreen("dashboard");
@@ -269,6 +272,16 @@ export default function App() {
         <Report
           user={user}
           isSuper={isSuper}
+          onBack={() => setScreen("dashboard")}
+        />
+      );
+    }
+
+    if (current === "stats") {
+      return (
+        <Stats
+          isSuper={isSuper}
+          section={section}
           onBack={() => setScreen("dashboard")}
         />
       );

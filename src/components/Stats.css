@@ -1,0 +1,87 @@
+.st {
+  min-height: 100%;
+  background: #f6f7fb;
+  padding: 16px 16px 40px;
+  font-family: "Poppins", system-ui, sans-serif;
+  color: #262323;
+  --blue: #3748a1;
+  --ink: #262323;
+  --ink2: #52514e;
+  --muted: #808080;
+  --grid: #e6e6e6;
+}
+
+.st-head { display: flex; align-items: center; gap: 14px; padding: 4px 0 12px; }
+.st-back {
+  width: 44px; height: 44px; margin-left: -10px;
+  display: grid; place-items: center; border: 0; background: none;
+  color: var(--ink); border-radius: 50%; cursor: pointer;
+}
+.st-back:active { background: #e9eaf3; }
+.st-title { margin: 0; font-size: 22px; font-weight: 600; color: var(--blue); line-height: 1.2; }
+.st-sub { margin: 0; font-size: 14px; color: var(--muted); }
+
+.st-periods {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  background: #e9eaf3; border-radius: 12px; padding: 4px; margin-bottom: 12px;
+}
+.st-periods button {
+  height: 44px; border: 0; border-radius: 9px; background: none;
+  font: inherit; font-size: 16px; color: var(--ink2); cursor: pointer;
+}
+.st-periods button.on { background: #fff; color: var(--blue); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+
+.st-chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 14px; scrollbar-width: none; }
+.st-chips::-webkit-scrollbar { display: none; }
+.st-chip {
+  flex: none; height: 40px; padding: 0 16px;
+  border: 1px solid #c9c9c9; border-radius: 999px; background: #fff;
+  font: inherit; font-size: 15px; color: var(--ink2); cursor: pointer;
+}
+.st-chip.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+
+.st-card { margin-top: 16px; padding: 18px 16px 16px; background: #fff; }
+.st-card h2 { margin: 0; font-size: 17px; line-height: 1.35; font-weight: 600; color: var(--ink); }
+.st-note { margin: 4px 0 12px; font-size: 13px; color: var(--muted); }
+.st-empty { margin: 12px 0 4px; font-size: 15px; color: var(--muted); }
+
+/* grafik */
+.st-svg { display: block; width: 100%; height: auto; }
+.st-svg .grid { stroke: var(--grid); stroke-width: 1; }
+.st-svg .tick { fill: var(--muted); font-size: 11px; }
+.st-svg .endlabel { fill: var(--ink2); font-size: 11.5px; }
+.st-svg .toplabel { fill: var(--ink); font-size: 12px; font-weight: 600; }
+.st-svg .cross { stroke: #b9b9b9; stroke-width: 1; stroke-dasharray: 3 3; }
+
+.st-legend { display: flex; flex-wrap: wrap; gap: 6px 16px; list-style: none; margin: 0 0 8px; padding: 0; font-size: 13px; color: var(--ink2); }
+.st-legend li { display: flex; align-items: center; gap: 6px; }
+.st-legend i, .st-readout i { width: 12px; height: 12px; border-radius: 4px; display: inline-block; }
+
+.st-readout {
+  margin-top: 8px; padding: 10px 12px; border-radius: 12px; background: #f3f4f9;
+  font-size: 14px; color: var(--ink2);
+}
+.st-readout strong { display: block; font-size: 15px; color: var(--ink); margin-bottom: 4px; }
+.st-readout ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+.st-readout li { display: flex; align-items: center; gap: 8px; }
+.st-readout b { color: var(--ink); font-weight: 600; }
+
+.st-link {
+  display: block; margin: 12px 0 0; padding: 10px 0; min-height: 44px;
+  border: 0; background: none; color: var(--blue);
+  font: inherit; font-size: 15px; text-decoration: underline; cursor: pointer;
+}
+.st-table { max-height: 240px; overflow: auto; border: 1px solid #e4e4e4; border-radius: 10px; margin-top: 4px; }
+.st-table table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.st-table th, .st-table td { padding: 8px 10px; text-align: right; border-bottom: 1px solid #f0f0f0; }
+.st-table th:first-child, .st-table td:first-child { text-align: left; }
+.st-table thead th { position: sticky; top: 0; background: #f3f4f9; color: var(--ink2); font-weight: 600; }
+
+/* batang horizontal (HTML) */
+.st-hbars { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.st-hbars .row { display: flex; justify-content: space-between; gap: 8px; font-size: 15px; }
+.st-hbars .nm { color: var(--ink); }
+.st-hbars b { color: var(--ink); font-weight: 600; }
+.st-hbars .bar { height: 10px; margin-top: 5px; border-radius: 999px; background: #ececec; overflow: hidden; }
+.st-hbars .bar i { display: block; height: 100%; border-radius: inherit; background: #2a78d6; }
+.st-hbars .meta { margin-top: 4px; font-size: 12.5px; color: var(--muted); }
