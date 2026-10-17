@@ -160,12 +160,12 @@ export default function DashboardUser({
 
         {/* Daftar check */}
         <h2 className="recent-title">
-          {hourly ? "Check per Jam" : "Recent Check"}
+          {hourly ? "Checks per Hour" : "Recent Check"}
         </h2>
 
         {hourly ? (
           slots.length === 0 ? (
-            <p className="empty">Belum ada jam kerja untuk tanggal ini.</p>
+            <p className="empty">No data for this date.</p>
           ) : (
             <div className="hours">
               {slots.map((h) => {
@@ -174,7 +174,7 @@ export default function DashboardUser({
                   return (
                     <div key={h} className="hour-row">
                       <b>{hourLabel(h)}</b>
-                      <small>Belum diisi</small>
+                      <small>Not filled yet</small>
                     </div>
                   );
                 }

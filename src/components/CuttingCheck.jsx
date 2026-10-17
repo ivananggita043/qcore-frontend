@@ -106,7 +106,7 @@ export default function CuttingCheck({ onBack, onFinish }) {
         <h1 className="cc-title">New QC Check</h1>
       </header>
 
-      <p className="cc-hint">Ketuk satu proses check untuk menandai OK atau defect</p>
+      <p className="cc-hint">Tap a check process to mark as OK or defect</p>
 
       {/* Stepper proses */}
       <nav className="cc-steps" aria-label="Process check">
@@ -156,10 +156,10 @@ export default function CuttingCheck({ onBack, onFinish }) {
                 <div key={name} className={`cc-pill ${n > 0 ? "on" : ""}`}>
                   <span className="nm">{name}</span>
                   <div className="ctl">
-                    <button type="button" aria-label={`Kurangi ${name}`}
+                    <button type="button" aria-label={`Reduce ${name}`}
                             disabled={n === 0} onClick={() => stepPanel(name, -1)}>−</button>
                     <output>{n}</output>
-                    <button type="button" aria-label={`Tambah ${name}`}
+                    <button type="button" aria-label={`Add ${name}`}
                             onClick={() => stepPanel(name, 1)}>+</button>
                   </div>
                 </div>
@@ -171,7 +171,7 @@ export default function CuttingCheck({ onBack, onFinish }) {
         <Field label="QTY INSP" inputMode="numeric" value={d.inspect} onChange={onDigits("inspect")} />
         <Field label="QTY DEFF" inputMode="numeric" value={d.defect} onChange={onDigits("defect")} />
         {d.inspect !== "" && Number(d.defect) > Number(d.inspect) && (
-          <p className="cc-warn">QTY DEFF lebih besar dari QTY INSP.</p>
+          <p className="cc-warn">QTY DEFF is greater than QTY INSP.</p>
         )}
         <Field label="% DEFF" className="ro" value={percent(d)} readOnly tabIndex={-1} />
         <Field label="Operator Name" value={d.operator}
@@ -182,7 +182,7 @@ export default function CuttingCheck({ onBack, onFinish }) {
           <p className="cc-cap">
             Detail Defect
             <small>
-              {d.defectTypes.length > 0 ? `${d.defectTypes.length} dipilih` : "pilih bila ada"}
+              {d.defectTypes.length > 0 ? `${d.defectTypes.length} selected` : "select if any"}
             </small>
           </p>
           <div className="cc-defects" role="group" aria-label="Detail defect">
@@ -210,7 +210,7 @@ export default function CuttingCheck({ onBack, onFinish }) {
             })}
           </div>
           {d.defectTypes.includes("Other") && (
-            <Field label="Keterangan Other" value={d.otherNote}
+            <Field label="Other Description" value={d.otherNote}
                    onChange={(e) => patch({ otherNote: e.target.value })} />
           )}
         </div>
@@ -234,8 +234,8 @@ export default function CuttingCheck({ onBack, onFinish }) {
           <div className="box">
             <h2 id="cc-end-title">End session?</h2>
             <p>
-              {checked} dari {CUTTING_PROCESSES.length} proses sudah terisi.
-              Data akan disimpan dan sesi ditutup.
+              {checked} from {CUTTING_PROCESSES.length} processes have been filled.
+              Data will be saved and the session will be closed.
             </p>
             <div className="row">
               <button type="button" onClick={() => setConfirmEnd(false)}>Cancel</button>

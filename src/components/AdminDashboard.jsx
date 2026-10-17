@@ -34,10 +34,10 @@ const shortDate = (s) => {
 
 const greeting = () => {
   const h = new Date().getHours();
-  if (h < 11) return "Selamat pagi";
-  if (h < 15) return "Selamat siang";
-  if (h < 18) return "Selamat sore";
-  return "Selamat malam";
+  if (h < 11) return "Good morning";
+  if (h < 15) return "Good afternoon";
+  if (h < 18) return "Good evening";
+  return "Good night";
 };
 
 const TODAY = toISO(new Date());
@@ -68,7 +68,7 @@ export default function AdminDashboard({ user, section, onNavigate, onBack, onLo
       <div className="dash-inner">
         {onBack && (
           <button type="button" className="sa-back" onClick={onBack}>
-            ‹ Semua section
+            ‹ All sections
           </button>
         )}
         <header className="dash-head">
@@ -145,7 +145,7 @@ export default function AdminDashboard({ user, section, onNavigate, onBack, onLo
         </h2>
 
         {lines.length === 0 ? (
-          <p className="empty">Tidak ada data untuk tanggal ini.</p>
+          <p className="empty">No data for this date.</p>
         ) : (
           <>
             <ul className="card perf">
@@ -158,7 +158,7 @@ export default function AdminDashboard({ user, section, onNavigate, onBack, onLo
                   <div
                     className="bar"
                     role="img"
-                    aria-label={`${l.name} ${l.pct} persen`}
+                    aria-label={`${l.name} ${l.pct} percent`}
                   >
                     <i style={{ width: `${l.pct}%` }} />
                   </div>
@@ -166,7 +166,7 @@ export default function AdminDashboard({ user, section, onNavigate, onBack, onLo
               ))}
             </ul>
             <p className="perf-legend">
-              Hijau 90% ke atas · Oranye 80–89% · Merah di bawah 80%
+              Green 90% above · Orange 80–89% · Red below 80%
             </p>
           </>
         )}

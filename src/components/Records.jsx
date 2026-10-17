@@ -11,8 +11,8 @@ const pad = (n) => String(n).padStart(2, "0");
 const toISO = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const fromISO = (s) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
 const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
-const num = (n) => Number(n).toLocaleString("id-ID");
-const rate = (n) => `${Number(n).toLocaleString("id-ID", { maximumFractionDigits: 1 })}%`;
+const num = (n) => Number(n).toLocaleString("en-US", { maximumFractionDigits: 1 });
+const rate = (n) => `${Number(n).toLocaleString("en-US", { maximumFractionDigits: 1 })}%`;
 const level = (p) => (p >= 90 ? "good" : p >= 80 ? "warn" : "bad");
 const longDate = (iso) => { const d = fromISO(iso); return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`; };
 
@@ -57,14 +57,14 @@ function topDefectsOf(secs, isos, limit = 3) {
 function buildPeriods(kind) {
   const out = [];
   if (kind === "weekly") {
-    const dow = (TODAY_D.getDay() + 6) % 7; // Senin = 0
+    const dow = (TODAY_D.getDay() - 5 + 7) % 7; // Jumat = 0
     const monday = addDays(TODAY_D, -dow);
     for (let i = 0; i < 8; i++) {
       const s = addDays(monday, -7 * i);
       const e = addDays(s, 6) > TODAY_D ? TODAY_D : addDays(s, 6);
       out.push({
         label: `${s.getDate()} ${SHORT[s.getMonth()]} – ${e.getDate()} ${SHORT[e.getMonth()]}`,
-        sub: i === 0 ? "Minggu ini" : `${i} minggu lalu`,
+        sub: i === 0 ? "This week" : `${i} weeks ago`,
         days: daysBetween(s, e),
       });
     }
@@ -75,7 +75,7 @@ function buildPeriods(kind) {
       const e = eFull > TODAY_D ? TODAY_D : eFull;
       out.push({
         label: `${MONTHS[s.getMonth()]} ${s.getFullYear()}`,
-        sub: i === 0 ? "Bulan ini" : "",
+        sub: i === 0 ? "This month" : "",
         days: daysBetween(s, e),
       });
     }
@@ -85,7 +85,7 @@ function buildPeriods(kind) {
       const s = new Date(y, 0, 1);
       const eFull = new Date(y, 11, 31);
       const e = eFull > TODAY_D ? TODAY_D : eFull;
-      out.push({ label: String(y), sub: i === 0 ? "Tahun ini" : "", days: daysBetween(s, e) });
+      out.push({ label: String(y), sub: i === 0 ? "This year" : "", days: daysBetween(s, e) });
     }
   }
   return out;
@@ -129,7 +129,7 @@ export default function Records({ user, isSuper, section = "sewing", onBack }) {
   return (
     <main className="rc">
       <header className="rc-head">
-        <button type="button" className="rc-back" aria-label="Kembali" onClick={onBack}>
+        <button type="button" className="rc-back" aria-label="back" onClick={onBack}>
           <svg width="12" height="20" viewBox="0 0 12 20" fill="none" aria-hidden="true">
             <path d="M10 2 2 10l8 8" stroke="currentColor" strokeWidth="1.8"
                   strokeLinecap="round" strokeLinejoin="round" />
@@ -139,7 +139,7 @@ export default function Records({ user, isSuper, section = "sewing", onBack }) {
           <h1 className="rc-title">QC Records</h1>
           <p className="rc-sub">
             {isSuper
-              ? scope === "all" ? "Semua section" : NAMES[scope]
+              ? scope === "all" ? "All sections" : NAMES[scope]
               : `${NAMES[section]} QC`}
           </p>
         </div>
@@ -156,17 +156,17 @@ export default function Records({ user, isSuper, section = "sewing", onBack }) {
               className={`rc-chip ${scope === k ? "on" : ""}`}
               onClick={() => setScope(k)}
             >
-              {k === "all" ? "Semua" : NAMES[k]}
+              {k === "all" ? "All" : NAMES[k]}
             </button>
           ))}
         </div>
       )}
 
       {/* ---------- 1. hari ini ---------- */}
-      <Acc title="Records hari ini" hint={longDate(TODAY)} open={open.today} onToggle={() => toggle("today")}>
+      <Acc title="Today " hint={longDate(TODAY)} open={open.today} onToggle={() => toggle("today")}>
         {secs.length > 1 && (
           <div className="rc-total">
-            <Stat v={num(todayTotal.inspections)} l="inspeksi" />
+            <Stat v={num(todayTotal.inspections)} l="inspections" />
             <Stat v={num(todayTotal.defects)} l="defect" tone="red" />
             <Stat v={rate(todayTotal.passRate)} l="pass rate" tone="green" />
           </div>
@@ -182,9 +182,9 @@ export default function Records({ user, isSuper, section = "sewing", onBack }) {
                 <i style={{ width: `${r.passRate}%` }} />
               </div>
               <div className="meta">
-                <span>{num(r.inspections)} inspeksi</span>
-                <span>{num(r.defects)} defect</span>
-                <span>{r.activeQc} QC aktif</span>
+                <span>{num(r.inspections)} inspections</span>
+                <span>{num(r.defects)} defects</span>
+                <span>{r.activeQc} active QC</span>
               </div>
             </li>
           ))}
@@ -192,14 +192,14 @@ export default function Records({ user, isSuper, section = "sewing", onBack }) {
       </Acc>
 
       {/* ---------- 2. detail hasil ---------- */}
-      <Acc title="Detail hasil hari ini" hint="Defect terbanyak" open={open.detail} onToggle={() => toggle("detail")}>
+      <Acc title="Detail results today" hint="Most common defects" open={open.detail} onToggle={() => toggle("detail")}>
         {todayRows.map((r) => {
           const max = Math.max(1, ...r.topDefects.map((d) => d.count));
           return (
             <section key={r.section} className="rc-detail">
               <h3>{r.name}</h3>
               {r.defects === 0 ? (
-                <p className="rc-none">Tidak ada defect.</p>
+                <p className="rc-none">No defects found.</p>
               ) : (
                 <ul>
                   {r.topDefects.slice(0, 3).map((d) => (
@@ -220,7 +220,7 @@ export default function Records({ user, isSuper, section = "sewing", onBack }) {
 
       {/* ---------- 3. semua waktu ---------- */}
       <Acc title="All Time" hint="Daily – Yearly" open={open.all} onToggle={() => toggle("all")}>
-        <select className="rc-select" value={period} aria-label="Periode"
+        <select className="rc-select" value={period} aria-label="Period"
                 onChange={(e) => setPeriod(e.target.value)}>
           <option value="daily">Daily</option>
           <option value="weekly">Weekly</option>
@@ -231,7 +231,7 @@ export default function Records({ user, isSuper, section = "sewing", onBack }) {
         {period === "daily" ? (
           <>
             <div className="rc-datebar">
-              <button type="button" aria-label="Hari sebelumnya" onClick={() => step(-1)}>‹</button>
+              <button type="button" aria-label="Previous day" onClick={() => step(-1)}>‹</button>
               <button type="button" className="rc-datechip" onClick={openCal}>
                 {longDate(picked)}
               </button>
@@ -242,16 +242,16 @@ export default function Records({ user, isSuper, section = "sewing", onBack }) {
                 value={picked}
                 max={TODAY}
                 tabIndex={-1}
-                aria-label="Pilih tanggal"
+                aria-label="Select date"
                 onChange={(e) => e.target.value && setPicked(e.target.value)}
               />
-              <button type="button" aria-label="Hari berikutnya" disabled={picked >= TODAY} onClick={() => step(1)}>›</button>
+              <button type="button" aria-label="Next day" disabled={picked >= TODAY} onClick={() => step(1)}>›</button>
             </div>
 
             <div className="rc-day">
               <div className="rc-total">
-                <Stat v={num(picked1.inspections)} l="inspeksi" />
-                <Stat v={num(picked1.defects)} l="defect" tone="red" />
+                <Stat v={num(picked1.inspections)} l="inspections" />
+                <Stat v={num(picked1.defects)} l="defects" tone="red" />
                 <Stat v={rate(picked1.passRate)} l="pass rate" tone="green" />
               </div>
               {pickedBy.length > 1 && (
@@ -281,8 +281,8 @@ export default function Records({ user, isSuper, section = "sewing", onBack }) {
                   {p.sub && <small>{p.sub}</small>}
                 </div>
                 <div className="nums">
-                  <span>{num(p.inspections)} inspeksi</span>
-                  <span>{num(p.defects)} defect</span>
+                  <span>{num(p.inspections)} inspections</span>
+                  <span>{num(p.defects)} defects</span>
                 </div>
                 <b className={level(p.passRate)}>{rate(p.passRate)}</b>
               </li>

@@ -11,14 +11,25 @@ const toISO = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDat
 const fromISO = (s) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
 const fmt = (d) => `${d.getDate()} ${SHORT[d.getMonth()]} ${d.getFullYear()}`;
 
-// minggu = Senin sampai Minggu
+// minggu kerja: Jumat sampai Kamis, hari Minggu libur (6 hari kerja)
+const WEEK_START = 5;   // 0=Minggu, 1=Senin, ... 5=Jumat
+const OFF_DAYS = [0];   // 0 = Minggu libur
+
 function weekRange(iso) {
   const d = fromISO(iso);
   const start = new Date(d);
-  start.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  start.setDate(d.getDate() - ((d.getDay() - WEEK_START + 7) % 7));
   const end = new Date(start);
   end.setDate(start.getDate() + 6);
   return [start, end];
+}
+
+function workingDays(start, end) {
+  let n = 0;
+  for (let t = new Date(start); t <= end; t.setDate(t.getDate() + 1)) {
+    if (!OFF_DAYS.includes(t.getDay())) n++;
+  }
+  return n;
 }
 
 const TODAY = toISO(new Date());
@@ -33,7 +44,7 @@ const PERIODS = [
 ];
 
 const SECTION_OPTIONS = [
-  { key: "all", label: "Semua" },
+  { key: "all", label: "All" },
   { key: "cutting", label: "Cutting" },
   { key: "sewing", label: "Sewing" },
   { key: "washing", label: "Washing" },
@@ -41,11 +52,11 @@ const SECTION_OPTIONS = [
 ];
 
 const SHEETS = [
-  { name: "Ringkasan", desc: "Total inspeksi, defect, pass rate" },
-  { name: "Per Line", desc: "Performa tiap line" },
-  { name: "Daftar Inspeksi", desc: "Semua data inspeksi" },
-  { name: "Detail Defect", desc: "Defect per area dan jenis" },
-  { name: "Per Jam", desc: "Khusus Sewing dan Washing" },
+  { name: "Summary", desc: "Total inspections, defects, pass rate" },
+  { name: "Per Line", desc: "Performance per line" },
+  { name: "Inspection List", desc: "All inspection data" },
+  { name: "Defect Details", desc: "Defect per area and type" },
+  { name: "Per Hour", desc: "Specific to Sewing and Washing" },
 ];
 
 export default function Report({ user, isSuper, onBack }) {
@@ -87,7 +98,7 @@ export default function Report({ user, isSuper, onBack }) {
 
   const download = () => {
     // TODO: panggil endpoint report backend, lalu unduh file .xlsx
-    setNotice("Ini baru desain. Unduhan Excel akan aktif setelah backend siap.");
+    setNotice("This is a design preview. Excel download will work once the backend is ready.");
     setTimeout(() => setNotice(""), 5000);
   };
 
@@ -97,15 +108,15 @@ export default function Report({ user, isSuper, onBack }) {
 
       <div className="dash-inner rp">
         <button type="button" className="rp-back" onClick={onBack}>
-          ‹ Kembali
+          ‹ Back
         </button>
 
         <h1 className="rp-title">Report</h1>
-        <p className="rp-sub">Unduh laporan QC dalam format Excel.</p>
+        <p className="rp-sub">Download the QC report as an Excel file.</p>
 
         {/* 1. Periode */}
-        <h2 className="rp-step"><span>1</span> Pilih periode</h2>
-        <div className="rp-seg" role="tablist" aria-label="Jenis periode">
+        <h2 className="rp-step"><span>1</span> Select period</h2>
+        <div className="rp-seg" role="tablist" aria-label="Period type">
           {PERIODS.map((p) => (
             <button
               key={p.key}
@@ -123,7 +134,7 @@ export default function Report({ user, isSuper, onBack }) {
         <div className="rp-card">
           {period === "daily" && (
             <label className="rp-field">
-              <span>Tanggal</span>
+              <span>Date</span>
               <input type="date" value={date} max={TODAY}
                      onChange={(e) => e.target.value && setDate(e.target.value)} />
             </label>
@@ -131,23 +142,23 @@ export default function Report({ user, isSuper, onBack }) {
           {period === "weekly" && (
             <>
               <label className="rp-field">
-                <span>Pilih tanggal di minggu yang diinginkan</span>
+                <span>Pick any date in the week you want</span>
                 <input type="date" value={week} max={TODAY}
                        onChange={(e) => e.target.value && setWeek(e.target.value)} />
               </label>
-              <p className="rp-hint">Minggu dihitung Senin sampai Minggu: {periodLabel}</p>
+              <p className="rp-hint">Weeks run from Friday to Thursday: {periodLabel}</p>
             </>
           )}
           {period === "monthly" && (
             <label className="rp-field">
-              <span>Bulan</span>
+              <span>Month</span>
               <input type="month" value={month} max={TODAY.slice(0, 7)}
                      onChange={(e) => e.target.value && setMonth(e.target.value)} />
             </label>
           )}
           {period === "yearly" && (
             <label className="rp-field">
-              <span>Tahun</span>
+              <span>Year</span>
               <select value={year} onChange={(e) => setYear(e.target.value)}>
                 {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
               </select>
@@ -156,11 +167,11 @@ export default function Report({ user, isSuper, onBack }) {
         </div>
 
         {/* 2. Section */}
-        <h2 className="rp-step"><span>2</span> Pilih section</h2>
+        <h2 className="rp-step"><span>2</span> Select section</h2>
         {fixedSection ? (
           <div className="rp-card rp-fixed">
             <strong>{sectionLabel}</strong>
-            <span>Admin hanya dapat mengunduh laporan section sendiri.</span>
+            <span>Admin only can download their own section's report.</span>
           </div>
         ) : (
           <div className="rp-chips" role="radiogroup" aria-label="Section">
@@ -180,7 +191,7 @@ export default function Report({ user, isSuper, onBack }) {
         )}
 
         {/* 3. Isi file */}
-        <h2 className="rp-step"><span>3</span> Isi file Excel</h2>
+        <h2 className="rp-step"><span>3</span> Excel file contents</h2>
         <div className="rp-card rp-file">
           <div className="rp-file-head">
             <div className="rp-xls" aria-hidden="true">XLSX</div>

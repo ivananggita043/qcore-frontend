@@ -18,7 +18,7 @@ export default function Login({ notice = "", onLogin }) {
       const session = await login(username, password);
       onLogin?.(session);
     } catch (err) {
-      setError(err?.message || "Login gagal. Silakan coba lagi.");
+      setError(err?.message || "Login failed. Please try again.");
       setPassword("");
       setLoading(false);
     }
@@ -83,7 +83,7 @@ export default function Login({ notice = "", onLogin }) {
           {!error && notice && <p className="login-notice" role="status">{notice}</p>}
 
           <button type="submit" className="signin" disabled={loading}>
-            {loading ? "Memproses…" : "Sign in"}
+            {loading ? "Processing…" : "Sign in"}
           </button>
         </form>
 

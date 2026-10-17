@@ -56,7 +56,7 @@ export default function Users({ isSuper, mySection, meId, onBack }) {
       setLines(l);
     } catch (e) {
       if (e?.name !== "AbortError")
-        setError(e?.message || "Gagal memuat data user.");
+        setError(e?.message || "Cannot load user data.");
     } finally {
       setLoading(false);
     }
@@ -133,7 +133,7 @@ export default function Users({ isSuper, mySection, meId, onBack }) {
     { key: "all", label: "ALL" },
     { key: "admin", label: "ADMIN" },
     { key: "qc", label: "QC" },
-    { key: "inactive", label: "Nonaktif" },
+    { key: "inactive", label: "Inactive" },
   ];
 
   return (
@@ -145,7 +145,7 @@ export default function Users({ isSuper, mySection, meId, onBack }) {
           <button
             type="button"
             className="us-back"
-            aria-label="Kembali"
+            aria-label="Back"
             onClick={onBack}
           >
             ‹
@@ -156,7 +156,7 @@ export default function Users({ isSuper, mySection, meId, onBack }) {
             className="us-refresh"
             onClick={() => load()}
             disabled={loading}
-            aria-label="Muat ulang daftar user"
+            aria-label="reload user data"
           >
             <svg
               width="20"
@@ -172,7 +172,7 @@ export default function Users({ isSuper, mySection, meId, onBack }) {
               <path d="M20 11a8 8 0 1 0-2.3 5.7" />
               <path d="M20 4v7h-7" />
             </svg>
-            <span>{loading ? "Memuat…" : "Muat ulang"}</span>
+            <span>{loading ? "Loading…" : "Reload"}</span>
           </button>
         </header>
 
@@ -198,14 +198,14 @@ export default function Users({ isSuper, mySection, meId, onBack }) {
           </svg>
           <input
             type="search"
-            placeholder="Cari nama, username, atau NIK"
+            placeholder="Search name, username, or NIK"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            aria-label="Cari user"
+            aria-label="Search users"
           />
         </label>
 
-        <div className="us-chips" role="tablist" aria-label="Filter user">
+        <div className="us-chips" role="tablist" aria-label="Filter users">
           {CHIPS.map((c) => (
             <button
               key={c.key}
@@ -223,8 +223,8 @@ export default function Users({ isSuper, mySection, meId, onBack }) {
 
         <p className="us-note">
           {isSuper
-            ? "Anda dapat mengubah admin dan user QC."
-            : "Anda dapat mengubah user QC di section Anda."}
+            ? "You can manage admins and QC users."
+            : "You can manage QC users in your section."}
         </p>
 
         {loading && !users && (
@@ -245,7 +245,7 @@ export default function Users({ isSuper, mySection, meId, onBack }) {
           <div className="us-banner" role="alert">
             <p>{error}</p>
             <button type="button" onClick={() => load()}>
-              Coba lagi
+              Try Again
             </button>
           </div>
         )}
@@ -253,7 +253,7 @@ export default function Users({ isSuper, mySection, meId, onBack }) {
         {users && (
           <ul className="us-list">
             {shown.length === 0 && (
-              <li className="us-empty">Tidak ada user yang cocok.</li>
+              <li className="us-empty">No matching users found.</li>
             )}
             {shown.map((u) => {
               const manage = canManage(u);
@@ -271,7 +271,7 @@ export default function Users({ isSuper, mySection, meId, onBack }) {
                     <span className="us-info">
                       <strong>
                         {u.nama || u.username}
-                        {u.id === meId && <em> (Anda)</em>}
+                        {u.id === meId && <em> (You)</em>}
                       </strong>
                       <span className="us-sub">{subtitle(u, lineName)}</span>
                       <span className="us-meta">
@@ -297,7 +297,7 @@ export default function Users({ isSuper, mySection, meId, onBack }) {
           <button
             type="button"
             className="us-fab"
-            aria-label="Tambah user"
+            aria-label="Add user"
             onClick={() => setForm({ mode: "create", target: null })}
           >
             +

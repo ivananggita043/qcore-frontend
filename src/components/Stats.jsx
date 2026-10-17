@@ -23,8 +23,8 @@ const toISO = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDat
 const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
 const parse = (iso) => { const [y, m, d] = iso.split("-").map(Number); return new Date(y, m - 1, d); };
 const dlabel = (iso) => { const d = parse(iso); return `${d.getDate()} ${SHORT[d.getMonth()]}`; };
-const num = (n) => Number(n).toLocaleString("id-ID");
-const pct = (n) => `${Number(n).toLocaleString("id-ID", { maximumFractionDigits: 1 })}%`;
+const num = (n) => Number(n).toLocaleString("en-US");
+const pct = (n) => `${Number(n).toLocaleString("en-US", { maximumFractionDigits: 1 })}%`;
 
 const TODAY_D = new Date();
 const TODAY = toISO(TODAY_D);
@@ -101,7 +101,7 @@ function LineChart({ dates, series }) {
         viewBox={`0 0 ${W} ${H}`}
         className="st-svg"
         role="img"
-        aria-label="Grafik tren defect rate"
+        aria-label="Defect rate trend chart"
         style={{ touchAction: "pan-y" }}
         onPointerDown={pick}
         onPointerMove={(e) => (e.pointerType === "mouse" || e.buttons) && pick(e)}
@@ -237,15 +237,15 @@ export default function Stats({ isSuper, section = "sewing", onBack }) {
   const diff = +(trend.totals.rate - prev.totals.rate).toFixed(1);
   const trendHead =
     diff === 0
-      ? "Defect rate sama seperti periode lalu"
-      : `Defect rate ${diff > 0 ? "naik" : "turun"} ${Math.abs(diff).toLocaleString("id-ID")} poin dari periode lalu`;
+      ? "Defect rate is the same as last period"
+      : `Defect rate ${diff > 0 ? "increased" : "decreased"} ${Math.abs(diff).toLocaleString("en-US")} pts from the previous period`;
 
   const worstHour = hourly.hours.reduce((m, h) => (h.rate > m.rate ? h : m), hourly.hours[0]);
   const hourItems = hourly.hours.map((h) => ({
     label: pad(h.hour),
     value: h.rate,
-    title: `Pukul ${pad(h.hour)}.00–${pad(h.hour + 1)}.00`,
-    sub: `${num(h.inspections)} inspeksi · ${num(h.defects)} defect`,
+    title: `Hour ${pad(h.hour)}.00–${pad(h.hour + 1)}.00`,
+    sub: `${num(h.inspections)} inspections · ${num(h.defects)} defects`,
   }));
 
   const volItems = volume.dates.map((iso, i) => ({
@@ -259,34 +259,34 @@ export default function Stats({ isSuper, section = "sewing", onBack }) {
   const maxDef = Math.max(1, ...defects.rows.map((r) => r.count));
 
   const trendIcon = diff === 0 ? "■" : diff > 0 ? "▲" : "▼";
-  const trendWord = diff === 0 ? "Stabil" : diff > 0 ? "Memburuk" : "Membaik";
+  const trendWord = diff === 0 ? "Stable" : diff > 0 ? "Worsening" : "Improving";
   const trendCls = diff === 0 ? "flat" : diff > 0 ? "bad" : "good";
 
   return (
     <main className="st">
       <div className="st-wrap">
         <header className="st-head">
-          <button type="button" className="st-back" aria-label="Kembali" onClick={onBack}>
+          <button type="button" className="st-back" aria-label="Back" onClick={onBack}>
             <svg width="12" height="20" viewBox="0 0 12 20" fill="none" aria-hidden="true">
               <path d="M10 2 2 10l8 8" stroke="currentColor" strokeWidth="1.8"
                     strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
           <div>
-            <h1 className="st-title">Statistik</h1>
+            <h1 className="st-title">Statistics</h1>
             <p className="st-sub">
-              {isSuper ? (scope === "all" ? "Semua section" : NAMES[scope]) : `${NAMES[section]} QC`}
-              {" · "}{days} hari terakhir
+              {isSuper ? (scope === "all" ? "All sections" : NAMES[scope]) : `${NAMES[section]} QC`}
+              {" · "}{days} days ago
             </p>
           </div>
         </header>
 
         <div className="st-filters">
-          <div className="st-periods" role="tablist" aria-label="Periode">
+          <div className="st-periods" role="tablist" aria-label="Period">
             {PERIODS.map((p) => (
               <button key={p} type="button" role="tab" aria-selected={days === p}
                       className={days === p ? "on" : ""} onClick={() => setDays(p)}>
-                {p} hari
+                {p} days
               </button>
             ))}
           </div>
@@ -296,7 +296,7 @@ export default function Stats({ isSuper, section = "sewing", onBack }) {
               {["all", ...ALL].map((k) => (
                 <button key={k} type="button" role="tab" aria-selected={scope === k}
                         className={`st-chip ${scope === k ? "on" : ""}`} onClick={() => setScope(k)}>
-                  {k === "all" ? "Semua" : NAMES[k]}
+                  {k === "all" ? "All" : NAMES[k]}
                 </button>
               ))}
             </div>
@@ -304,24 +304,24 @@ export default function Stats({ isSuper, section = "sewing", onBack }) {
         </div>
 
         {/* ringkasan angka */}
-        <section className="st-kpis" aria-label="Ringkasan">
+        <section className="st-kpis" aria-label="Summary">
           <div className="st-kpi main">
             <span className="lb">Defect rate</span>
             <span className="v">{pct(trend.totals.rate)}</span>
             <span className={`delta ${trendCls}`}>
               <i aria-hidden="true">{trendIcon}</i> {trendWord}
-              {diff !== 0 && ` ${Math.abs(diff).toLocaleString("id-ID")} poin`}
+              {diff !== 0 && ` ${Math.abs(diff).toLocaleString("en-US")} pts`}
             </span>
           </div>
           <div className="st-kpi">
-            <span className="lb">Total inspeksi</span>
+            <span className="lb">Total inspections</span>
             <span className="v">{num(trend.totals.inspections)}</span>
-            <span className="un">check</span>
+            <span className="un">checks</span>
           </div>
           <div className="st-kpi">
-            <span className="lb">Total defect</span>
+            <span className="lb">Total defects</span>
             <span className="v">{num(trend.totals.defects)}</span>
-            <span className="un">check berdefect</span>
+            <span className="un">defective checks</span>
           </div>
         </section>
 
@@ -329,16 +329,16 @@ export default function Stats({ isSuper, section = "sewing", onBack }) {
           {/* 1. tren */}
           <section className="card st-card wide">
             <h2>{trendHead}</h2>
-            <p className="st-note">Defect rate harian. Sentuh atau arahkan kursor ke grafik untuk melihat angka tiap hari.</p>
+            <p className="st-note">Daily defect rate. Tap or hover over the chart to see each day's value.</p>
             <LineChart dates={trend.dates} series={series} />
             <button type="button" className="st-link" onClick={() => setTable((v) => !v)}>
-              {table ? "Sembunyikan tabel" : "Lihat sebagai tabel"}
+              {table ? "Hide table" : "View as table"}
             </button>
             {table && (
               <div className="st-table" tabIndex={0}>
                 <table>
                   <thead>
-                    <tr><th>Tanggal</th>{series.map((s) => <th key={s.section}>{s.name}</th>)}</tr>
+                    <tr><th>Date</th>{series.map((s) => <th key={s.section}>{s.name}</th>)}</tr>
                   </thead>
                   <tbody>
                     {[...trend.dates].reverse().map((iso, k) => {
@@ -360,14 +360,14 @@ export default function Stats({ isSuper, section = "sewing", onBack }) {
           <section className="card st-card">
             <h2>
               {hourly.applicable
-                ? `Defect paling sering muncul pukul ${pad(worstHour.hour)}.00`
-                : "Defect per jam"}
+                ? `Defects peak at ${pad(worstHour.hour)}.00`
+                : "Defect per hour"}
             </h2>
-            <p className="st-note">Defect rate per jam kerja (Sewing dan Washing)</p>
+            <p className="st-note">Defect rate per working hour  (Sewing dan Washing)</p>
             {hourly.applicable ? (
-              <BarChart items={hourItems} fmt={(v) => pct(v)} noun="Defect rate" ariaLabel="Defect rate per jam" />
+              <BarChart items={hourItems} fmt={(v) => pct(v)} noun="Defect rate" ariaLabel="Defect rate per hour" />
             ) : (
-              <p className="st-empty">Section ini dicek harian, jadi tidak ada data per jam.</p>
+              <p className="st-empty">This section is checked daily, so there is no hourly data.</p>
             )}
           </section>
 
@@ -375,10 +375,10 @@ export default function Stats({ isSuper, section = "sewing", onBack }) {
           <section className="card st-card tall">
             <h2>
               {defects.rows[0]
-                ? `${defects.rows[0].name} paling banyak (${pct(defects.rows[0].share)})`
-                : "Jenis defect"}
+                ? `${defects.rows[0].name} is the top defect (${pct(defects.rows[0].share)})`
+                : "Defect types"}
             </h2>
-            <p className="st-note">Jenis defect terbanyak. Kumulatif menunjukkan porsi gabungan dari peringkat teratas.</p>
+            <p className="st-note">Top defect types. Cumulative shows the combined share of the top rankings.</p>
             <ul className="st-hbars">
               {defects.rows.map((d, i) => (
                 <li key={d.name}>
@@ -387,7 +387,7 @@ export default function Stats({ isSuper, section = "sewing", onBack }) {
                     <b>{num(d.count)}</b>
                   </div>
                   <div className="bar"><i style={{ width: `${(d.count / maxDef) * 100}%` }} /></div>
-                  <div className="meta">{pct(d.share)} dari total · kumulatif {d.cum}%</div>
+                  <div className="meta">{pct(d.share)} of total · cumulative {d.cum}%</div>
                 </li>
               ))}
             </ul>
@@ -397,11 +397,11 @@ export default function Stats({ isSuper, section = "sewing", onBack }) {
           <section className="card st-card">
             <h2>
               {lines.rows[0]
-                ? `${lines.rows[0].name} defect rate tertinggi (${pct(lines.rows[0].rate)})`
-                : "Perbandingan"}
+                ? `${lines.rows[0].name} has the highest defect rate (${pct(lines.rows[0].rate)})`
+                : "Comparison"}
             </h2>
             <p className="st-note">
-              {lines.kind === "section" ? "Perbandingan antar section" : "Perbandingan antar line"}, diurutkan dari yang tertinggi
+              {lines.kind === "section" ? "Comparison between sections" : "Comparison between lines"}, sorted by the highest rate
             </p>
             <ul className="st-hbars">
               {lines.rows.map((r) => (
@@ -418,14 +418,14 @@ export default function Stats({ isSuper, section = "sewing", onBack }) {
 
           {/* 5. volume */}
           <section className="card st-card wide">
-            <h2>Rata-rata {num(volAvg)} inspeksi per hari</h2>
-            <p className="st-note">Jumlah check per hari</p>
+            <h2>Average {num(volAvg)} inspections per day</h2>
+            <p className="st-note">Number of checks per day</p>
             <BarChart
               items={volItems}
               fmt={(v) => num(v)}
-              noun="Inspeksi"
+              noun="Inspection"
               defaultIndex={volItems.length - 1}
-              ariaLabel="Volume inspeksi per hari"
+              ariaLabel="Volume inspections per day"
             />
           </section>
         </div>

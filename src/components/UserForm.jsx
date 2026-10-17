@@ -65,14 +65,14 @@ export default function UserForm({ mode, target, isSuper, mySection, lines, onBa
     );
 
   const validate = () => {
-    if (!f.nama.trim()) return "Nama wajib diisi.";
-    if (!f.username.trim()) return "Username wajib diisi.";
-    if (/\s/.test(f.username)) return "Username tidak boleh mengandung spasi.";
-    if (!isEdit && !f.password) return "Password wajib diisi.";
-    if (f.password && f.password.length < 6) return "Password minimal 6 karakter.";
-    if (!section) return "Pilih section.";
+    if (!f.nama.trim()) return "Name is required.";
+    if (!f.username.trim()) return "Username is required.";
+    if (/\s/.test(f.username)) return "Username cannot contain spaces.";
+    if (!isEdit && !f.password) return "Password is required.";
+    if (f.password && f.password.length < 6) return "Password must be at least 6 characters long.";
+    if (!section) return "Please select a section.";
     if (f.role === "user" && f.lineIds.length === 0)
-      return "Pilih minimal satu line untuk akun QC.";
+      return "Please select at least one line for the QC account.";
     return "";
   };
 
@@ -84,7 +84,7 @@ export default function UserForm({ mode, target, isSuper, mySection, lines, onBa
       await action();
       onDone(doneMessage);
     } catch (e) {
-      setError(e?.message || "Terjadi kesalahan. Coba lagi.");
+      setError(e?.message || "An error occurred. Please try again.");
       setBusy(false);
     }
   };
@@ -112,9 +112,9 @@ export default function UserForm({ mode, target, isSuper, mySection, lines, onBa
           password: "",
         });
       }
-      setInfo(isEdit ? "Data user dimuat ulang dari server." : "Daftar line dimuat ulang.");
+      setInfo(isEdit ? "User data refreshed." : "Line list refreshed.");
     } catch (e) {
-      setError(e?.message || "Gagal memuat ulang. Coba lagi.");
+      setError(e?.message || "An error occurred while refreshing. Please try again.");
     } finally {
       setRefreshing(false);
     }
@@ -130,7 +130,7 @@ export default function UserForm({ mode, target, isSuper, mySection, lines, onBa
     const payload = { ...f, section };
     run(
       () => (isEdit ? updateUser(target.id, payload) : createUser(payload)),
-      isEdit ? "Perubahan disimpan." : "User baru ditambahkan."
+      isEdit ? "Changes saved." : "New user added."
     );
   };
 
@@ -140,16 +140,16 @@ export default function UserForm({ mode, target, isSuper, mySection, lines, onBa
 
       <form className="dash-inner us uf" onSubmit={save} noValidate>
         <header className="us-head">
-          <button type="button" className="us-back" aria-label="Kembali" onClick={onBack}>
+          <button type="button" className="us-back" aria-label="Back" onClick={onBack}>
             ‹
           </button>
-          <h1 className="us-title">{isEdit ? "Edit User" : "Tambah User"}</h1>
+          <h1 className="us-title">{isEdit ? "Edit User" : "Add User"}</h1>
           <button
             type="button"
             className="us-refresh"
             onClick={refresh}
             disabled={refreshing || busy}
-            aria-label="Muat ulang data"
+            aria-label="Refresh data"
           >
             <svg
               width="20"
@@ -165,7 +165,7 @@ export default function UserForm({ mode, target, isSuper, mySection, lines, onBa
               <path d="M20 11a8 8 0 1 0-2.3 5.7" />
               <path d="M20 4v7h-7" />
             </svg>
-            <span>{refreshing ? "Memuat…" : "Muat ulang"}</span>
+            <span>{refreshing ? "Loading…" : "Refresh"}</span>
           </button>
         </header>
 
@@ -173,7 +173,7 @@ export default function UserForm({ mode, target, isSuper, mySection, lines, onBa
         {info && <p className="uf-info" role="status">{info}</p>}
 
         <label className="uf-field">
-          <span>Nama lengkap</span>
+          <span>Name</span>
           <input
             value={f.nama}
             onChange={(e) => set("nama", e.target.value)}
@@ -190,11 +190,11 @@ export default function UserForm({ mode, target, isSuper, mySection, lines, onBa
             autoCapitalize="characters"
             autoComplete="off"
           />
-          <p className="uf-hint">Maksimal 10 karakter, tanpa spasi.</p>
+          <p className="uf-hint">Maximum 10 characters, no spaces.</p>
         </label>
 
         <label className="uf-field">
-          <span>NIK (opsional)</span>
+          <span>NIK (optional)</span>
           <input
             value={f.nik}
             maxLength={30}
@@ -205,11 +205,11 @@ export default function UserForm({ mode, target, isSuper, mySection, lines, onBa
 
         {/* Peran */}
         <div className="uf-field">
-          <span>Peran</span>
+          <span>Role</span>
           {roleLocked ? (
-            <p className="uf-fixed">QC (Admin hanya dapat mengelola user QC)</p>
+            <p className="uf-fixed">QC (Admin can only manage QC users)</p>
           ) : (
-            <div className="uf-seg" role="radiogroup" aria-label="Peran">
+            <div className="uf-seg" role="radiogroup" aria-label="Role">
               {[
                 { key: "user", label: "QC" },
                 { key: "admin", label: "Admin" },
@@ -237,7 +237,7 @@ export default function UserForm({ mode, target, isSuper, mySection, lines, onBa
               value={f.section}
               onChange={(e) => setF((p) => ({ ...p, section: e.target.value, lineIds: [] }))}
             >
-              <option value="">Pilih section</option>
+              <option value="">Select section</option>
               {SECTION_KEYS.map((k) => (
                 <option key={k} value={k}>
                   {SECTIONS[k].label}
@@ -254,11 +254,11 @@ export default function UserForm({ mode, target, isSuper, mySection, lines, onBa
           <div className="uf-field">
             <span>Line</span>
             {!section ? (
-              <p className="uf-hint">Pilih section dulu untuk melihat daftar line.</p>
+              <p className="uf-hint">Select a section first to view the list of lines.</p>
             ) : sectionLines.length === 0 ? (
               <p className="uf-hint">
-                Belum ada line aktif di section ini, atau daftar line gagal dimuat.
-                Coba tombol Muat ulang.
+                There are no active lines in this section, or the list of lines failed to load.
+                Try the Refresh button.
               </p>
             ) : (
               <div className="uf-lines">
@@ -282,7 +282,7 @@ export default function UserForm({ mode, target, isSuper, mySection, lines, onBa
 
         {/* Password */}
         <div className="uf-field">
-          <span>{isEdit ? "Password baru" : "Password"}</span>
+          <span>{isEdit ? "New password" : "Password"}</span>
           <div className="uf-pass">
             <input
               type={showPass ? "text" : "password"}
@@ -292,16 +292,16 @@ export default function UserForm({ mode, target, isSuper, mySection, lines, onBa
               aria-label="Password"
             />
             <button type="button" onClick={() => setShowPass((s) => !s)}>
-              {showPass ? "Sembunyi" : "Tampil"}
+              {showPass ? "Hide" : "Show"}
             </button>
           </div>
           <p className="uf-hint">
-            {isEdit ? "Kosongkan jika password tidak diganti." : "Minimal 6 karakter."}
+            {isEdit ? "Leave blank if you don't want to change the password." : "Minimum 6 characters."}
           </p>
         </div>
 
         <button type="submit" className="uf-save" disabled={busy || refreshing}>
-          {busy ? "Memproses…" : isEdit ? "Simpan perubahan" : "Tambah user"}
+          {busy ? "Processing…" : isEdit ? "Save Changes" : "Add User"}
         </button>
 
         {isEdit && (
@@ -313,11 +313,11 @@ export default function UserForm({ mode, target, isSuper, mySection, lines, onBa
               onClick={() =>
                 run(
                   () => setUserActive(target.id, !live.active),
-                  live.active ? "Akun dinonaktifkan." : "Akun diaktifkan."
+                  live.active ? "Account deactivated." : "Account activated."
                 )
               }
             >
-              {live.active ? "Nonaktifkan akun" : "Aktifkan akun"}
+              {live.active ? "Deactivate account" : "Activate account"}
             </button>
 
             {!confirmDelete ? (
@@ -327,25 +327,24 @@ export default function UserForm({ mode, target, isSuper, mySection, lines, onBa
                 disabled={busy || refreshing}
                 onClick={() => setConfirmDelete(true)}
               >
-                Hapus user
+                Delete user
               </button>
             ) : (
-              <div className="uf-confirm" role="alertdialog" aria-label="Konfirmasi hapus">
+              <div className="uf-confirm" role="alertdialog" aria-label="Confirm delete">
                 <p>
-                  Hapus <strong>{live.nama || live.username}</strong>? Tindakan ini tidak
-                  dapat dibatalkan.
+                  Delete <strong>{live.nama || live.username}</strong>? This action cannot be undone.
                 </p>
                 <div>
                   <button type="button" onClick={() => setConfirmDelete(false)} disabled={busy}>
-                    Batal
+                    Cancel
                   </button>
                   <button
                     type="button"
                     className="yes"
                     disabled={busy}
-                    onClick={() => run(() => deleteUser(target.id), "User dihapus.")}
+                    onClick={() => run(() => deleteUser(target.id), "User deleted.")}
                   >
-                    Ya, hapus
+                    Yes, delete
                   </button>
                 </div>
               </div>

@@ -21,7 +21,7 @@ function SearchBox({ value, onChange, placeholder }) {
         aria-label={placeholder}
       />
       {value && (
-        <button type="button" className="qs-clear" aria-label="Hapus pencarian"
+        <button type="button" className="qs-clear" aria-label="Delete search"
                 onClick={() => onChange("")}>×</button>
       )}
     </div>
@@ -99,7 +99,7 @@ export default function QcStandard({
 
   const renderTypes = (forArea) =>
     types.length === 0 ? (
-      <p className="qs-empty">Tidak ada defect type yang cocok.</p>
+      <p className="qs-empty">no defect type found.</p>
     ) : (
       <ul className="qs-list">
         {types.map((t) => {
@@ -175,7 +175,7 @@ export default function QcStandard({
               <>
                 <SearchBox value={areaQuery} onChange={setAreaQuery} placeholder="Cari defect area…" />
                 {areas.length === 0 ? (
-                  <p className="qs-empty">Tidak ada area yang cocok.</p>
+                  <p className="qs-empty">No defect areas found.</p>
                 ) : (
                   <div className="qs-areas" role="group" aria-label="Defect area">
                     {areas.map((a) => {
@@ -206,14 +206,14 @@ export default function QcStandard({
                 {renderTypes(area)}
               </>
             ) : (
-              <p className="qs-empty">Pilih defect area terlebih dahulu.</p>
+              <p className="qs-empty">Please select a defect area first.</p>
             )}
           </>
         ) : (
           <>
-            <p className="qs-sub">Hitung Defect Type</p>
+            <p className="qs-sub">Count Defect Types</p>
             {showTypeSearch && (
-              <SearchBox value={typeQuery} onChange={setTypeQuery} placeholder="Cari defect type…" />
+              <SearchBox value={typeQuery} onChange={setTypeQuery} placeholder="Find defect type…" />
             )}
             {renderTypes(null)}
           </>
@@ -222,7 +222,7 @@ export default function QcStandard({
         {/* Ringkasan yang sudah dicatat */}
         {entries.length > 0 && (
           <section className="qs-recorded">
-            <p className="qs-sub">Sudah dicatat ({total})</p>
+            <p className="qs-sub">Already recorded ({total})</p>
             <ul>
               {entries.map(([key, e]) => (
                 <li key={key}>
@@ -231,7 +231,7 @@ export default function QcStandard({
                     {e.area ? ` · ${e.area}` : ""} · {e.type}
                   </span>
                   <strong>×{e.count}</strong>
-                  <button type="button" aria-label="Hapus" onClick={() => removeEntry(key)}>×</button>
+                  <button type="button" aria-label="Delete" onClick={() => removeEntry(key)}>×</button>
                 </li>
               ))}
             </ul>

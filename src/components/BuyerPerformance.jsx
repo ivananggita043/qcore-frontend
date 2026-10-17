@@ -41,8 +41,8 @@ export default function BuyerPerformance({ sections, date }) {
 
   return (
     <section className="card bp">
-      <h2 className="bp-title">Performa Buyer &amp; Style</h2>
-      <p className="bp-sub">Peringkat berdasarkan defect rate</p>
+      <h2 className="bp-title">Buyer performance &amp; Style</h2>
+      <p className="bp-sub">Ranking based on defect rate</p>
 
       {sections.length > 1 && (
         <div className="bp-chips" role="tablist" aria-label="Section">
@@ -55,13 +55,13 @@ export default function BuyerPerformance({ sections, date }) {
               className={`bp-chip ${scope === k ? "on" : ""}`}
               onClick={() => { setScope(k); reset(); }}
             >
-              {k === "all" ? "Semua" : NAMES[k]}
+              {k === "all" ? "All" : NAMES[k]}
             </button>
           ))}
         </div>
       )}
 
-      <div className="bp-tabs" role="tablist" aria-label="Kelompok">
+      <div className="bp-tabs" role="tablist" aria-label="Group">
         {[["buyer", "Buyer"], ["style", "Style"]].map(([k, l]) => (
           <button
             key={k}
@@ -79,16 +79,16 @@ export default function BuyerPerformance({ sections, date }) {
       <select
         className="bp-sort"
         value={sort}
-        aria-label="Urutkan"
+        aria-label="Sort"
         onChange={(e) => { setSort(e.target.value); reset(); }}
       >
-        <option value="worst">Defect rate tertinggi dulu</option>
-        <option value="best">Defect rate terendah dulu</option>
-        <option value="volume">Inspeksi terbanyak dulu</option>
+        <option value="worst">Highest defect rate first</option>
+        <option value="best">Lowest defect rate first</option>
+        <option value="volume">Most inspections first</option>
       </select>
 
       {rows.length === 0 ? (
-        <p className="bp-empty">Tidak ada data untuk tanggal ini.</p>
+        <p className="bp-empty">No data available for this date.</p>
       ) : (
         <>
           <ul className="bp-list">
@@ -123,10 +123,10 @@ export default function BuyerPerformance({ sections, date }) {
 
           {rows.length > LIMIT && (
             <button type="button" className="bp-more" onClick={() => setShowAll((v) => !v)}>
-              {showAll ? "Tampilkan lebih sedikit" : `Lihat semua (${rows.length})`}
+              {showAll ? "Show less" : `View all (${rows.length})`}
             </button>
           )}
-          <p className="bp-legend">Defect rate: hijau ≤ 5% · oranye 5–10% · merah &gt; 10%</p>
+          <p className="bp-legend">Defect rate: green ≤ 5% · orange 5–10% · red &gt; 10%</p>
         </>
       )}
     </section>
@@ -150,14 +150,14 @@ function Row({ rank, r, sub, max, expandable, open, onToggle, small }) {
           </span>
           <strong>{fmt(r.rate)}%</strong>
         </span>
-        <span className="bar" role="img" aria-label={`${r.name} defect rate ${fmt(r.rate)} persen`}>
+        <span className="bar" role="img" aria-label={`${r.name} defect rate ${fmt(r.rate)} percent`}>
           <i style={{ width: `${Math.max(4, (r.rate / max) * 100)}%` }} />
         </span>
         <span className="meta">
-          <span>{num(r.inspections)} inspeksi · {num(r.defects)} defect</span>
+          <span>{num(r.inspections)} inspections · {num(r.defects)} defects</span>
           {r.delta !== 0 && (
             <span className={up ? "worse" : "better"}>
-              {up ? "↑" : "↓"} {fmt(Math.abs(r.delta))} poin
+              {up ? "↑" : "↓"} {fmt(Math.abs(r.delta))} points
             </span>
           )}
         </span>

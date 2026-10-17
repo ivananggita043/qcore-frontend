@@ -15,13 +15,13 @@ const fromISO = (s) => { const [y, m, d] = s.split("-").map(Number); return new 
 const longDate = (s) => { const d = fromISO(s); return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`; };
 const greeting = () => {
   const h = new Date().getHours();
-  if (h < 11) return "Selamat pagi";
-  if (h < 15) return "Selamat siang";
-  if (h < 18) return "Selamat sore";
-  return "Selamat malam";
+  if (h < 11) return "Good Morning";
+  if (h < 15) return "Good Afternoon";
+  if (h < 18) return "Good Evening";
+  return "Good Night";
 };
-const num = (n) => Number(n).toLocaleString("id-ID");                 // 1234 -> 1.234
-const pct = (n) => `${Number(n).toLocaleString("id-ID", { maximumFractionDigits: 1 })}%`; // 98.8 -> 98,8%
+const num = (n) => Number(n).toLocaleString("en-US");                 // 1234 -> 1.234
+const pct = (n) => `${Number(n).toLocaleString("en-US", { maximumFractionDigits: 1 })}%`; // 98.8 -> 98.8%
 
 const TODAY = toISO(new Date());
 
@@ -101,7 +101,7 @@ export default function SuperAdminDashboard({ user, onNavigate, onOpenSection, o
         <h2 className="recent-title">Quality Performance</h2>
 
         {sections.length === 0 ? (
-          <p className="empty">Tidak ada data untuk tanggal ini.</p>
+          <p className="empty">No data for this date.</p>
         ) : (
           <>
             <ul className="card sa-sections">
@@ -121,7 +121,7 @@ export default function SuperAdminDashboard({ user, onNavigate, onOpenSection, o
                       <i style={{ width: `${s.pct}%` }} />
                     </div>
                     <div className="meta">
-                      <span>{num(s.inspections)} inspeksi</span>
+                      <span>{num(s.inspections)} inspections</span>
                       <span>{num(s.defects)} defect</span>
                       <span className="more" aria-hidden="true">Detail ›</span>
                     </div>
@@ -129,14 +129,14 @@ export default function SuperAdminDashboard({ user, onNavigate, onOpenSection, o
                 </li>
               ))}
             </ul>
-            <p className="perf-legend">Hijau 90% ke atas · Oranye 80–89% · Merah di bawah 80%</p>
+            <p className="perf-legend">Green 90% above · Yellow 80–89% · Red below 80%</p>
           </>
         )}
 
         {/* Defect terbanyak */}
         {topDefects.length > 0 && (
           <>
-            <h2 className="recent-title">Defect Terbanyak</h2>
+            <h2 className="recent-title">Top Defects</h2>
             <ul className="card sa-top">
               {topDefects.map((d, i) => (
                 <li key={d.name}>
@@ -174,7 +174,7 @@ export default function SuperAdminDashboard({ user, onNavigate, onOpenSection, o
 function Kpi({ label, value, delta, upIsGood, tone }) {
   const dir = delta > 0 ? "up" : delta < 0 ? "down" : "flat";
   const good = dir === "flat" ? null : (dir === "up") === upIsGood;
-  const text = `${Math.abs(delta).toLocaleString("id-ID", { maximumFractionDigits: 1 })}%`;
+  const text = `${Math.abs(delta).toLocaleString("en-US", { maximumFractionDigits: 1 })}%`;
   return (
     <div className="card sa-kpi">
       <p className="lbl">{label}</p>
@@ -182,7 +182,7 @@ function Kpi({ label, value, delta, upIsGood, tone }) {
       <p className={`delta ${good === null ? "flat" : good ? "good" : "bad"}`}>
         <span aria-hidden="true">{dir === "up" ? "↑" : dir === "down" ? "↓" : "–"}</span>
         {" "}{text}
-        <span className="vs"> vs kemarin</span>
+        <span className="vs"> vs yesterday</span>
       </p>
     </div>
   );

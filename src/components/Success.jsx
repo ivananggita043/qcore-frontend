@@ -49,19 +49,19 @@ export default function Success({ result, onDashboard }) {
         <h1 className="sx-title" ref={titleRef} tabIndex={-1}>
           QC Submitted<br />Successfully!
         </h1>
-        <p className="sx-live" role="status">Data QC berhasil dikirim.</p>
+        <p className="sx-live" role="status">QC submitted successfully!</p>
 
         <div className="sx-id">
           <span className="lbl">Inspection</span>
           <strong>{result.id}</strong>
-          <button type="button" onClick={copyId} aria-label="Salin nomor inspeksi">
-            {copied ? "Tersalin ✓" : "Salin"}
+          <button type="button" onClick={copyId} aria-label="Copy inspection number">
+            {copied ? "Copied ✓" : "Copy"}
           </button>
         </div>
 
         <dl className="sx-card">
           <div><dt>Time</dt><dd>{fmtTime(when)} WIB</dd></div>
-          <div><dt>Tanggal</dt><dd>{fmtDate(when)}</dd></div>
+          <div><dt>Date</dt><dd>{fmtDate(when)}</dd></div>
         </dl>
 
         {open && (
@@ -71,9 +71,9 @@ export default function Success({ result, onDashboard }) {
                 <div key={k}><dt>{k}</dt><dd>{v}</dd></div>
               ))}
             </dl>
-            <p className="sx-sub">Ringkasan</p>
+            <p className="sx-sub">Summary</p>
             {result.lines.length === 0 ? (
-              <p className="sx-none">Tidak ada defect dicatat.</p>
+              <p className="sx-none">No defects recorded.</p>
             ) : (
               <ul>
                 {result.lines.map((l, i) => <li key={i}>{l}</li>)}

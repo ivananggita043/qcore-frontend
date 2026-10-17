@@ -29,23 +29,23 @@ const BASIC = [
 function fieldsFor(section) {
   if (section === "cutting") {
     return [
-      { k: "process", label: "Proses check", type: "select", options: PROCESS, required: true },
+      { k: "process", label: "Process check", type: "select", options: PROCESS, required: true },
       ...BASIC,
       { k: "lot", label: "Lot", type: "text", required: true },
-      { k: "operator", label: "Nama operator", type: "text", required: true },
-      { k: "qty", label: "Jumlah inspect (pcs)", type: "number", min: 1, required: true },
+      { k: "operator", label: "Operator name", type: "text", required: true },
+      { k: "qty", label: "Inspected qty (pcs)", type: "number", min: 1, required: true },
       { k: "panel", label: "Panel defect", type: "select", options: PANELS, required: true },
-      { k: "defectQty", label: "Jumlah defect (pcs)", type: "number", min: 1, required: true },
-      { k: "comment", label: "Catatan", type: "textarea" },
+      { k: "defectQty", label: "Defect qty (pcs)", type: "number", min: 1, required: true },
+      { k: "comment", label: "Comment", type: "textarea" },
     ];
   }
   return [
     ...BASIC,
-    { k: "qty", label: "Jumlah inspect (pcs)", type: "number", min: 1, required: true },
-    { k: "defectType", label: "Jenis defect", type: "select", options: DEFECT_TYPES[section] ?? [], optional: true },
-    { k: "defectQty", label: "Jumlah defect (pcs)", type: "number", min: 0 },
+    { k: "qty", label: "Inspected qty (pcs)", type: "number", min: 1, required: true },
+    { k: "defectType", label: "Defect type", type: "select", options: DEFECT_TYPES[section] ?? [], optional: true },
+    { k: "defectQty", label: "Defect qty (pcs)", type: "number", min: 0 },
     { k: "transfer", label: "Transfer (pcs)", type: "number", min: 0 },
-    { k: "comment", label: "Catatan", type: "textarea" },
+    { k: "comment", label: "Notes", type: "textarea" },
   ];
 }
 
@@ -123,17 +123,17 @@ function EditSheet({ section, item, onClose, onSave }) {
   const save = () => {
     for (const f of fields) {
       const val = String(v[f.k] ?? "").trim();
-      if (f.required && !val) return setErr(`${f.label} wajib diisi.`);
+      if (f.required && !val) return setErr(`${f.label} is required.`);
       if (f.type === "number" && val !== "") {
         const n = Number(val);
-        if (!Number.isInteger(n) || n < (f.min ?? 0)) return setErr(`${f.label} harus angka bulat minimal ${f.min ?? 0}.`);
+        if (!Number.isInteger(n) || n < (f.min ?? 0)) return setErr(`${f.label} must be a whole number, minimum ${f.min ?? 0}.`);
       }
     }
     const qty = Number(v.qty);
     const defectQty = Number(v.defectQty || 0);
-    if (defectQty > qty) return setErr("Jumlah defect tidak boleh lebih besar dari jumlah inspect.");
-    if (section !== "cutting" && Number(v.transfer || 0) > qty) return setErr("Transfer tidak boleh lebih besar dari jumlah inspect.");
-    if (section !== "cutting" && defectQty > 0 && !v.defectType) return setErr("Pilih jenis defect.");
+    if (defectQty > qty) return setErr("Defect quantity cannot be greater than inspected quantity.");
+    if (section !== "cutting" && Number(v.transfer || 0) > qty) return setErr("Transfer quantity cannot be greater than inspected quantity.");
+    if (section !== "cutting" && defectQty > 0 && !v.defectType) return setErr("Please select a defect type.");
 
     const patch = Object.fromEntries(
       fields.map((f) => [f.k, f.type === "number" ? Number(v[f.k] || 0) : String(v[f.k] ?? "").trim()])
@@ -216,7 +216,7 @@ export default function History({ user, section = "sewing", onBack }) {
     // TODO: await apiFetch(PUT, toPayload(section, patch, lineId)) lalu update state jika sukses
     setEdits((m) => ({ ...m, [editing.key]: patch }));
     setEditing(null);
-    setToast("Perubahan disimpan");
+    setToast("Changes saved.");
     setTimeout(() => setToast(""), 2200);
   };
 
@@ -225,7 +225,7 @@ export default function History({ user, section = "sewing", onBack }) {
   return (
     <main className="hs">
       <header className="hs-head">
-        <button type="button" className="hs-back" aria-label="Kembali" onClick={onBack}>
+        <button type="button" className="hs-back" aria-label="Back" onClick={onBack}>
           <svg width="12" height="20" viewBox="0 0 12 20" fill="none" aria-hidden="true">
             <path d="M10 2 2 10l8 8" stroke="currentColor" strokeWidth="1.8"
                   strokeLinecap="round" strokeLinejoin="round" />
@@ -245,20 +245,20 @@ export default function History({ user, section = "sewing", onBack }) {
             type="search"
             value={query}
             placeholder="Search by buyer, style, or color..."
-            aria-label="Cari riwayat"
+            aria-label="Search history"
             onChange={(e) => { setQuery(e.target.value); setShown(PAGE); }}
           />
         </label>
 
         <div className="hs-filters">
-          <select className="hs-select" value={sort} aria-label="Urutkan"
+          <select className="hs-select" value={sort} aria-label="sort"
                   onChange={(e) => setSort(e.target.value)}>
             <option value="recent">Recent</option>
             <option value="oldest">Oldest</option>
           </select>
           <select className="hs-select" value={buyer} aria-label="Filter buyer"
                   onChange={(e) => { setBuyer(e.target.value); setShown(PAGE); }}>
-            <option value="all">All Buyer</option>
+            <option value="all">All Buyers</option>
             {buyers.map((b) => (
               <option key={b} value={b}>{b}</option>
             ))}
@@ -267,7 +267,7 @@ export default function History({ user, section = "sewing", onBack }) {
       </div>
 
       {rows.length === 0 ? (
-        <p className="hs-empty">Tidak ada riwayat yang cocok.</p>
+        <p className="hs-empty">No matching history found.</p>
       ) : (
         <>
           <ul className="hs-list">
@@ -296,7 +296,7 @@ export default function History({ user, section = "sewing", onBack }) {
 
           {shown < rows.length && (
             <button type="button" className="hs-more" onClick={() => setShown((n) => n + PAGE)}>
-              Tampilkan lagi ({rows.length - shown})
+              Show more ({rows.length - shown})
             </button>
           )}
         </>

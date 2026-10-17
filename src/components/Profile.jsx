@@ -5,7 +5,7 @@ import "./Profile.css";
 
 const DETAILS = [
   { key: "nik",     label: "NIK" },
-  { key: "name",    label: "Nama" },
+  { key: "name",    label: "Name" },
   { key: "process", label: "Process" },
   { key: "line",    label: "Line" },
 ];
@@ -28,7 +28,7 @@ export default function Profile({ user, onBack }) {
 
   const data = {
     ...user,
-    nik: nik === undefined ? "Memuat…" : nik || user.nik || "-",
+    nik: nik === undefined ? "Loading…" : nik || user.nik || "-",
   };
 
   return (

@@ -61,13 +61,13 @@ export default function NewQcCheck({ hourly = false, onBack, onStart }) {
       <form className="newqc-form" onSubmit={handleSubmit}>
         {hourly && (
           <label className="nq-field">
-            <span className="nq-label">Jam</span>
+            <span className="nq-label">Hours</span>
             <select name="hour" value={hour} onChange={(e) => setHour(e.target.value)}>
               {hours.map((h) => (
                 <option key={h} value={h}>{hourLabel(h)}</option>
               ))}
             </select>
-            <span className="nq-hint">Boleh memilih jam sebelumnya untuk pengisian susulan.</span>
+            <span className="nq-hint">You can select previous hours for follow-up entries.</span>
           </label>
         )}
 
