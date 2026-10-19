@@ -1,4 +1,6 @@
-const SECTIONS = ["cutting", "sewing", "washing", "finishing"];
+import { SECTIONS } from "../config/sections.js";
+
+const SECTION_KEYS = Object.keys(SECTIONS);
 const ROLES = ["user", "admin", "super_admin"];
 
 // Alat bantu pengembangan: pilih role dan section tanpa mengubah kode.
@@ -34,7 +36,7 @@ export default function DevSectionSwitcher({ section, role, onSection, onRole, a
         DEV · section
         <select value={section} onChange={(e) => onSection(e.target.value)} style={sel}>
           {allowAll && <option value="">semua</option>}
-          {SECTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+          {SECTION_KEYS.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
       </label>
     </div>

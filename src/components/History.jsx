@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { userDay } from "../mock/dashboardData.js";
+import { userDay, buyerOfStyle } from "../mock/dashboardData.js";
 import "./History.css";
 
 const SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"];
@@ -76,7 +76,6 @@ export function toPayload(section, v, lineId, defectTypeIdOf = (x) => x) {
 }
 
 /* ---------- data contoh ---------- */
-const BUYERS = ["Uniqlo", "H&M", "Zara", "Decathlon"];
 const COLORS = ["Navy", "Black", "White", "Olive", "Grey"];
 const OPERATORS = ["Dewi", "Rina", "Agus", "Sari", "Budi"];
 
@@ -94,7 +93,7 @@ function buildHistory(section) {
         key: `${toISO(d)}-${j}-${c.id}`,
         label: `${d.getDate()} ${SHORT[d.getMonth()]}`,
         edited: s % 9 === 0,
-        buyer: BUYERS[s % BUYERS.length],
+        buyer: buyerOfStyle(c.style),
         color: COLORS[s % COLORS.length],
         lot: `LOT-${100 + (s % 40)}`,
         operator: OPERATORS[s % OPERATORS.length],

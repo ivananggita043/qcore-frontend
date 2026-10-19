@@ -20,6 +20,7 @@ import Users from "./components/Users.jsx";
 import History from "./components/History.jsx";
 import Records from "./components/Records.jsx";
 import Stats from "./components/Stats.jsx";
+import FinalCheck from "./components/FinalCheck.jsx";
 
 const PROTECTED = [
   "dashboard",
@@ -27,13 +28,14 @@ const PROTECTED = [
   "newcheck",
   "qcsewing",
   "cutting",
+  "final",
   "success",
   "soon",
   "reports",
   "users",
   "history",
   "records",
-  "stats"
+  "stats",
 ];
 const ROLE_LABEL = {
   user: "QC Line",
@@ -48,6 +50,7 @@ const PREFIX = {
   washing: "WSH",
   finishing: "FIN",
   packing: "PCK",
+  final: "FNL",
 };
 
 // Hanya mode dev: role/section bisa diganti lewat kotak DEV atau URL,
@@ -120,6 +123,28 @@ function buildCuttingResult(data) {
         `${p.process}: ${p.status === "ok" ? "OK" : "Defect"} · INSP ${p.inspect || 0} · DEFF ${p.defect || 0}` +
         (p.defectTypes.length ? ` · ${p.defectTypes.join(", ")}` : ""),
     ),
+  };
+}
+
+function buildFinalResult(data) {
+  const { counts, session } = data;
+  return {
+    id: makeInspectionId("final"),
+    section: "final",
+    submittedAt: new Date().toISOString(),
+    rows: [
+      ["Section", "Final"],
+      ["Buyer / Style", `${session.buyer} / ${session.style}`],
+      ["PO", session.po],
+      ["Lot qty", String(session.lotQty)],
+      ["QTY INSP", String(data.inspected)],
+      [
+        "Critical / Major / Minor",
+        `${counts.critical} / ${counts.major} / ${counts.minor}`,
+      ],
+      ["Result", data.result === "pass" ? "PASS" : "FAIL"],
+    ],
+    lines: data.reasons,
   };
 }
 
@@ -200,7 +225,9 @@ export default function App() {
 
   // keluar dari layar pemeriksaan yang sedang terbuka saat role/section DEV diganti
   const leaveCheckScreens = () => {
-    if (["cutting", "newcheck", "qcsewing", "success"].includes(screen)) {
+    if (
+      ["cutting", "final", "newcheck", "qcsewing", "success"].includes(screen)
+    ) {
       setJob(null);
       setResult(null);
       setScreen("dashboard");
@@ -321,6 +348,20 @@ export default function App() {
       return <Profile user={user} onBack={() => setScreen("dashboard")} />;
     }
 
+    if (current === "final") {
+      return (
+        <FinalCheck
+          onBack={() => setScreen("dashboard")}
+          onFinish={(data) => {
+            // TODO: kirim ke POST /final-inspections (endpoint belum ada di backend)
+            console.log("final QC:", data);
+            setResult(buildFinalResult(data));
+            setScreen("success");
+          }}
+        />
+      );
+    }
+
     if (current === "cutting") {
       return (
         <CuttingCheck
@@ -396,7 +437,13 @@ export default function App() {
         <DashboardUser
           user={user}
           onNewCheck={() =>
-            setScreen(cfg.flow === "cutting" ? "cutting" : "newcheck")
+            setScreen(
+              cfg.flow === "cutting"
+                ? "cutting"
+                : cfg.flow === "final"
+                  ? "final"
+                  : "newcheck",
+            )
           }
           onHistory={() => setScreen("history")}
           onNavigate={goUserMenu}

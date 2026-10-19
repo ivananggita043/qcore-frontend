@@ -6,6 +6,7 @@ import MenuDrawer from "./MenuDrawer";
 import "./AdminDashboard.css";
 import "./SuperAdminDashboard.css";
 import BuyerPerformance from "./BuyerPerformance.jsx";
+import { SECTIONS } from "../config/sections.js";
 
 /* ---------- helper tanggal ---------- */
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -155,7 +156,7 @@ export default function SuperAdminDashboard({ user, onNavigate, onOpenSection, o
             </ul>
           </>
         )}
-        <BuyerPerformance sections={["cutting", "sewing", "washing", "finishing"]} date={date} />
+        <BuyerPerformance sections={Object.keys(SECTIONS)} date={date} />
       </div>
 
       <MenuDrawer

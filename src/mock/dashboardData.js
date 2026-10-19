@@ -146,6 +146,8 @@ export function adminDay(section, iso) {
   };
 }
 
+const STYLE_CODES = ["VS-2401", "VS-2402", "VS-2405", "CK-1101", "CK-1107", "EF-330", "EF-342", "EF-351", "LB-710", "LB-715"];
+
 // User QC (daftar check per jam)
 export function userDay(section, iso) {
   const key = SECTION_PROFILE[section] ? section : "sewing";
@@ -166,7 +168,7 @@ export function userDay(section, iso) {
           hour: h,
           time: `${pad2(h)}.${pad2(min)}`,
           status: r() < 0.2 ? "Finish" : "Pass",
-          style: r() < 0.5 ? "EL" : "VS",
+          style: STYLE_CODES[Math.floor(r() * STYLE_CODES.length)],
           qty: PCS_PER_CHECK,
         });
       }
@@ -203,11 +205,10 @@ export function sectionDay(section, iso) {
 
 /* ================= performa per buyer & style (data tiruan) ================= */
 const BUYERS = [
-  { name: "Elle",   styles: ["EL-2401", "EL-2402", "EL-2405"] },
-  { name: "Vessa",  styles: ["VS-1101", "VS-1107"] },
-  { name: "Nordic", styles: ["NR-330", "NR-342", "NR-351"] },
-  { name: "Aruna",  styles: ["AR-710", "AR-715"] },
-  { name: "Kobo",   styles: ["KB-908", "KB-912", "KB-920"] },
+  { name: "Victoria's Secret", styles: ["VS-2401", "VS-2402", "VS-2405"] },
+  { name: "Calvin Klein",      styles: ["CK-1101", "CK-1107"] },
+  { name: "Eileen Fisher",     styles: ["EF-330", "EF-342", "EF-351"] },
+  { name: "L.L.Bean",          styles: ["LB-710", "LB-715"] },
 ];
 
 function buyerRaw(sections, iso) {
@@ -419,4 +420,9 @@ export function statsVolume(sections, endISO, days) {
       validSecs(sections).reduce((a, sec) => a + sectionStats(sec, asDate(iso)).inspections, 0)
     ),
   };
+}
+
+// nama buyer dari kode style (dipakai halaman History)
+export function buyerOfStyle(style) {
+  return BUYERS.find((b) => b.styles.includes(style))?.name ?? "-";
 }
