@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { SECTIONS } from "../config/sections.js";
 import StatusBar from "./StatusBar.jsx";
 import "./DashboardUser.css";
 import "./Report.css";
@@ -45,10 +46,7 @@ const PERIODS = [
 
 const SECTION_OPTIONS = [
   { key: "all", label: "All" },
-  { key: "cutting", label: "Cutting" },
-  { key: "sewing", label: "Sewing" },
-  { key: "washing", label: "Washing" },
-  { key: "finishing", label: "Finishing" },
+  ...Object.entries(SECTIONS).map(([key, s]) => ({ key, label: s.label })),
 ];
 
 const SHEETS = [
@@ -56,7 +54,8 @@ const SHEETS = [
   { name: "Per Line", desc: "Performance per line" },
   { name: "Inspection List", desc: "All inspection data" },
   { name: "Defect Details", desc: "Defect per area and type" },
-  { name: "Per Hour", desc: "Specific to Sewing and Washing" },
+  { name: "Per Hour", desc: "Sewing and Washing only", only: ["sewing", "washing"] },
+  { name: "AQL Result", desc: "Final only: sample size, limits and Pass/Fail per lot", only: ["final"] },
 ];
 
 export default function Report({ user, isSuper, onBack }) {
@@ -74,6 +73,10 @@ export default function Report({ user, isSuper, onBack }) {
   const sectionLabel = fixedSection
     ? user.process
     : SECTION_OPTIONS.find((s) => s.key === sectionKey)?.label;
+
+  const sheets = SHEETS.filter(
+    (s) => !s.only || activeSection === "all" || s.only.includes(activeSection)
+  );
 
   // label periode dan bagian nama file
   let periodLabel = "";
@@ -201,7 +204,7 @@ export default function Report({ user, isSuper, onBack }) {
             </div>
           </div>
           <ul className="rp-sheets">
-            {SHEETS.map((s) => (
+            {sheets.map((s) => (
               <li key={s.name}>
                 <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
                   <path d="M3.5 9.5l3.5 3.5 7.5-8" fill="none" stroke="currentColor"

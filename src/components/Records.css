@@ -126,3 +126,4 @@
   opacity: 0;
   pointer-events: none;
 }
+.rc-chips { flex-wrap: wrap; overflow-x: visible; }

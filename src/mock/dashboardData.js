@@ -2,10 +2,12 @@ import { hourSlots } from "../config/sections.js";
 
 /* ---------- profil data tiap section (satuan: check per hari) ---------- */
 const SECTION_PROFILE = {
-  cutting:   { perDay: [30, 50],   passRate: [93, 98.5], lines: 3, qc: [4, 6] },
+  cutting:   { perDay: [110, 160], passRate: [90, 98],   lines: 3, qc: [4, 6] },
   sewing:    { perDay: [100, 150], passRate: [84, 96],   lines: 8, qc: [14, 20] },
-  washing:   { perDay: [40, 70],   passRate: [86, 97],   lines: 3, qc: [5, 8] },
-  finishing: { perDay: [60, 90],   passRate: [90, 98],   lines: 5, qc: [9, 13] },
+  washing:   { perDay: [90, 130],  passRate: [86, 97],   lines: 3, qc: [5, 8] },
+  finishing: { perDay: [100, 140], passRate: [90, 98],   lines: 5, qc: [9, 13] },
+  packing:   { perDay: [110, 160], passRate: [89, 98],   lines: 4, qc: [8, 12] },
+  final:     { perDay: [110, 150], passRate: [88, 97],   lines: 2, qc: [4, 6] }, // 1 check = 1 carton (40 pcs)
 };
 
 const DEFECTS = {
@@ -13,9 +15,11 @@ const DEFECTS = {
   sewing:    ["Skip Stitch", "Broken Stitch", "Uneven Hem", "Puckering", "Ukuran tidak sesuai"],
   washing:   ["Noda", "Warna belang", "Penyusutan", "Bau kimia", "Tekstur kasar"],
   finishing: ["Benang sisa", "Kotor/noda", "Setrika kurang", "Label salah", "Kancing lepas"],
+  packing:   ["Wrong carton count", "Missing label", "Wrong size sticker", "Torn polybag", "Damaged carton"],
+  final:     ["Visible stain", "Out of tolerance", "Loose thread", "Wrong assortment", "Misaligned print"],
 };
 
-const NAMES = { cutting: "Cutting", sewing: "Sewing", washing: "Washing", finishing: "Finishing" };
+const NAMES = { cutting: "Cutting", sewing: "Sewing", washing: "Washing", finishing: "Finishing", packing: "Packing", final: "Final" };
 const PCS_PER_CHECK = 40; // 1 check = 40 pcs
 
 /* ---------- helper ---------- */
@@ -229,14 +233,17 @@ function buyerRaw(sections, iso) {
       const wSum = items.reduce((a, it) => a + it.w, 0);
       items.forEach((it) => {
         it.insp = Math.round((s.inspections * it.w) / wSum);
-        it.raw = it.insp * it.bias;
       });
-      const k = s.defects / (items.reduce((a, it) => a + it.raw, 0) || 1);
+      // each style gets its own defect rate around the section rate
+      const secRate = s.inspections ? s.defects / s.inspections : 0;
+      const bsum = items.reduce((a, it) => a + it.insp * it.bias, 0) || 1;
+      const isum = items.reduce((a, it) => a + it.insp, 0) || 1;
       items.forEach((it) => {
+        const rate = Math.min(0.6, (secRate * it.bias * isum) / bsum);
         const key = `${it.buyer}|${it.style}`;
         const a = (acc[key] ||= { buyer: it.buyer, style: it.style, inspections: 0, defects: 0 });
         a.inspections += it.insp;
-        a.defects += Math.min(it.insp, Math.round(it.raw * k));
+        a.defects += Math.min(it.insp, Math.max(it.insp >= 10 ? 1 : 0, Math.round(it.insp * rate)));
       });
     });
   return acc;
@@ -426,3 +433,11 @@ export function statsVolume(sections, endISO, days) {
 export function buyerOfStyle(style) {
   return BUYERS.find((b) => b.styles.includes(style))?.name ?? "-";
 }
+
+// Manpower = active QC accounts per section (mock; later from the users list)
+const MANPOWER = { cutting: 12, sewing: 48, washing: 10, finishing: 16, packing: 14, final: 6 };
+const MP_NAMES = { cutting: "Cutting", sewing: "Sewing", washing: "Washing", finishing: "Finishing", packing: "Packing", final: "Final" };
+export const statsManpower = (secs) => {
+  const rows = secs.map((s) => ({ section: s, name: MP_NAMES[s] ?? s, count: MANPOWER[s] ?? 0 }));
+  return { total: rows.reduce((n, r) => n + r.count, 0), rows };
+};

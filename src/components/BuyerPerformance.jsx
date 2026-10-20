@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { buyerPerformance } from "../mock/dashboardData.js";
 import "./BuyerPerformance.css";
 
-const NAMES = { cutting: "Cutting", sewing: "Sewing", washing: "Washing", finishing: "Finishing" };
+const NAMES = { cutting: "Cutting", sewing: "Sewing", washing: "Washing", finishing: "Finishing", packing: "Packing", final: "Final" };
 const LIMIT = 5;
 
 // defect rate: makin kecil makin baik

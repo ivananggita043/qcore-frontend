@@ -171,3 +171,4 @@
   cursor: pointer;
 }
 .rp-download:active { background: #2a387f; }
+.rp-chips { flex-wrap: wrap; }

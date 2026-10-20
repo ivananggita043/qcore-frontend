@@ -1,9 +1,10 @@
 import { useMemo, useRef, useState } from "react";
+import { SECTIONS } from "../config/sections.js";
 import { sectionDay } from "../mock/dashboardData.js";
 import "./Records.css";
 
-const ALL = ["cutting", "sewing", "washing", "finishing"];
-const NAMES = { cutting: "Cutting", sewing: "Sewing", washing: "Washing", finishing: "Finishing" };
+const ALL = Object.keys(SECTIONS);
+const NAMES = Object.fromEntries(Object.entries(SECTIONS).map(([k, s]) => [k, s.label]));
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
@@ -267,7 +268,7 @@ export default function Records({ user, isSuper, section = "sewing", onBack }) {
               )}
               {pickedTop.length > 0 && (
                 <p className="rc-topdef">
-                  <b>Defect terbanyak:</b> {pickedTop.map((d) => `${d.name} (${d.count})`).join(", ")}
+                  <b>Top defects:</b> {pickedTop.map((d) => `${d.name} (${d.count})`).join(", ")}
                 </p>
               )}
             </div>
