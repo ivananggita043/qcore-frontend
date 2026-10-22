@@ -3,6 +3,7 @@ export const MENU_ADMIN = [
   { key: "records", label: "QC RECORDS", icon: "records" },
   { key: "stats",   label: "STATISTIK",  icon: "stats" },
   { key: "users",   label: "USERS",      icon: "users" },
+  { key: "reports", label: "REPORT",     icon: "report" },
   { key: "profile", label: "PROFILE",    icon: "profile" },
 ];
 

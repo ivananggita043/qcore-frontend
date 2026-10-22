@@ -1,5 +1,8 @@
 import { apiFetch } from "./client.js";
+import { loadSession } from "../auth/session.js";
 
+// prefix backend mengikuti role yang sedang login
+const base = () => (loadSession()?.user?.role === "super_admin" ? "/super-admin" : "/admin");
 
 const lower = (v) => (v ? String(v).toLowerCase() : null);
 
@@ -36,32 +39,33 @@ const toApi = (f) => {
 };
 
 export async function fetchUsers(signal) {
-  const data = await apiFetch("/users/all", { signal });
+  const data = await apiFetch(`${base()}/users/all`, { signal });
   return (data ?? []).map(fromApi);
 }
 
 export async function fetchLines(signal) {
-  const data = await apiFetch("/lines/all", { signal });
+  const data = await apiFetch(`${base()}/lines/all`, { signal });
   return (Array.isArray(data) ? data : []).map(lineFromApi);
 }
 
 export async function fetchUser(id, signal) {
-  const data = await apiFetch(`/users/${id}`, { signal });
+  const data = await apiFetch(`${base()}/users/${id}`, { signal });
   return fromApi(data);
 }
 
+// /auth/me bisa dipakai semua role
 export async function fetchMe(signal) {
   return apiFetch("/auth/me", { signal });
 }
 
 export const createUser = (form) =>
-  apiFetch("/users", { method: "POST", body: toApi(form) });
+  apiFetch(`${base()}/users`, { method: "POST", body: toApi(form) });
 
 export const updateUser = (id, form) =>
-  apiFetch(`/users/${id}`, { method: "PUT", body: toApi(form) });
+  apiFetch(`${base()}/users/${id}`, { method: "PUT", body: toApi(form) });
 
 export const setUserActive = (id, active) =>
-  apiFetch(`/users/${id}/status?active=${active}`, { method: "PATCH" });
+  apiFetch(`${base()}/users/${id}/status?active=${active}`, { method: "PATCH" });
 
-export const deleteUser = (id) => apiFetch(`/users/${id}`, { method: "DELETE" });
-
+export const deleteUser = (id) =>
+  apiFetch(`${base()}/users/${id}`, { method: "DELETE" });
