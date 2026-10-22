@@ -3,6 +3,7 @@ import { SECTIONS } from "../config/sections.js";
 import StatusBar from "./StatusBar.jsx";
 import "./DashboardUser.css";
 import "./Report.css";
+import { canDownload, downloadReport } from "../api/reports.js";
 
 /* ---------- helper tanggal ---------- */
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -66,6 +67,7 @@ export default function Report({ user, isSuper, onBack }) {
   const [year, setYear] = useState(YEARS[0]);
   const [sectionKey, setSectionKey] = useState("all");
   const [notice, setNotice] = useState("");
+  const [busy, setBusy] = useState(false);
 
   // admin biasa hanya boleh section-nya sendiri
   const fixedSection = !isSuper;
@@ -99,11 +101,33 @@ export default function Report({ user, isSuper, onBack }) {
   }
   const fileName = `QC-Report_${activeSection === "all" ? "All" : sectionLabel}_${filePart}.xlsx`;
 
-  const download = () => {
-    // TODO: panggil endpoint report backend, lalu unduh file .xlsx
-    setNotice("This is a design preview. Excel download will work once the backend is ready.");
-    setTimeout(() => setNotice(""), 5000);
-  };
+ const download = async () => {
+  setNotice("");
+  if (!canDownload(activeSection, period)) {
+    setNotice(
+      activeSection === "cutting" && period === "yearly"
+        ? "Yearly report is not available in the backend yet."
+        : "Available now: Cutting (daily, weekly, monthly). Other reports are coming soon."
+    );
+    return;
+  }
+  setBusy(true);
+  try {
+    const blob = await downloadReport(activeSection, period, { date, week, month });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    setNotice(e.message || "Download failed.");
+  } finally {
+    setBusy(false);
+  }
+};
 
   return (
     <main className="dash">
@@ -221,12 +245,12 @@ export default function Report({ user, isSuper, onBack }) {
 
         {notice && <p className="rp-notice" role="status">{notice}</p>}
 
-        <button type="button" className="rp-download" onClick={download}>
+        <button type="button" className="rp-download" onClick={download} disabled={busy}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M12 4v11" /><path d="M7 11l5 5 5-5" /><path d="M5 20h14" />
           </svg>
-          Download Excel
+          {busy ? "Preparing file…" : "Download Excel"}
         </button>
       </div>
     </main>

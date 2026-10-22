@@ -62,3 +62,31 @@ export async function apiFetch(path, { method = "GET", body, auth = true, signal
       : `Permintaan gagal (${res.status}).`);
   throw new ApiError(message, res.status, data);
 }
+
+// unduh file (blob), memakai token login
+export async function apiDownload(path, { signal } = {}) {
+  const token = getToken();
+  let res;
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      signal,
+    });
+  } catch (e) {
+    if (e?.name === "AbortError") throw e;
+    throw new ApiError("Server tidak terjangkau. Pastikan backend berjalan.", 0);
+  }
+
+  if (res.ok) return res.blob();
+
+  if (res.status === 401 && onUnauthorized) onUnauthorized();
+
+  let message = `Download gagal (${res.status}).`;
+  try {
+    const data = JSON.parse(await res.text());
+    if (data?.message) message = data.message;
+  } catch {
+    /* body bukan JSON */
+  }
+  throw new ApiError(message, res.status);
+}
