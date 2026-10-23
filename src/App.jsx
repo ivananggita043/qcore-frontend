@@ -21,6 +21,7 @@ import History from "./components/History.jsx";
 import Records from "./components/Records.jsx";
 import Stats from "./components/Stats.jsx";
 import FinalCheck from "./components/FinalCheck.jsx";
+import CuttingHistory from "./components/CuttingHistory.jsx";
 
 const PROTECTED = [
   "dashboard",
@@ -100,28 +101,26 @@ function buildStandardResult(section, label, data) {
 }
 
 function buildCuttingResult(data) {
-  const totalDef = data.processes.reduce(
-    (s, p) => s + (Number(p.defect) || 0),
-    0,
+  const styles = data.processes.flatMap((p) =>
+    p.styles.map((s) => ({ ...s, process: p.process })),
   );
+  const totalInsp = styles.reduce((a, s) => a + s.inspect, 0);
+  const totalDef = styles.reduce((a, s) => a + s.defect, 0);
   return {
     id: makeInspectionId("cutting"),
     section: "cutting",
     submittedAt: new Date().toISOString(),
     rows: [
       ["Section", "Cutting"],
-      [
-        "Buyer / Style",
-        `${data.session.buyer || "-"} / ${data.session.style || "-"}`,
-      ],
-      ["LOT", data.session.lot || "-"],
-      ["Proses terisi", String(data.processes.length)],
+      ["Processes submitted", String(data.processes.length)],
+      ["Styles", String(styles.length)],
+      ["Total QTY INSP", String(totalInsp)],
       ["Total QTY DEFF", String(totalDef)],
     ],
-    lines: data.processes.map(
-      (p) =>
-        `${p.process}: ${p.status === "ok" ? "OK" : "Defect"} · INSP ${p.inspect || 0} · DEFF ${p.defect || 0}` +
-        (p.defectTypes.length ? ` · ${p.defectTypes.join(", ")}` : ""),
+    lines: styles.map(
+      (s) =>
+        `${s.process}: ${s.buyer} / ${s.style} · ${s.color} · LOT ${s.lot} · INSP ${s.inspect} · DEFF ${s.defect}` +
+        (s.defectTypes.length ? ` · ${s.defectTypes.join(", ")}` : ""),
     ),
   };
 }
@@ -326,8 +325,9 @@ export default function App() {
     }
 
     if (current === "history") {
+      const Page = section === "cutting" ? CuttingHistory : History;
       return (
-        <History
+        <Page
           user={user}
           section={section}
           onBack={() => setScreen("dashboard")}

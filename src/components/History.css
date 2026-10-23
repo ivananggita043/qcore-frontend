@@ -228,3 +228,24 @@
   color: #fff;
   font-size: 15px;
 }
+
+/* Lembar edit Cutting (banyak style) */
+.hs-proc { margin: 0 0 12px; font-size: 15px; color: #262323; }
+.hs-item { margin: 0 0 18px; padding: 14px 12px 4px; border: 1px solid #d0cfcf; border-radius: 14px; }
+.hs-item-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px; font-weight: 600; color: #3748a1;
+}
+.hs-item-remove { padding: 6px 4px; border: 0; background: none; color: #c62828; font: inherit; font-size: 14px; cursor: pointer; }
+.hs-panels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+.hs-panels label { display: block; font-size: 12px; color: #555; }
+.hs-panels input {
+  box-sizing: border-box; width: 100%; height: 44px; margin-top: 4px; padding: 0 8px;
+  border: 1px solid #888787; border-radius: 10px; font: inherit; font-size: 16px; text-align: center;
+}
+.hs-total { margin: 0 0 14px; font-size: 14px; color: #555; }
+.hs-field select, .hs-field textarea {
+  box-sizing: border-box; width: 100%; padding: 10px 14px; border: 1px solid #888787;
+  border-radius: 10px; background: #fff; font: inherit; font-size: 17px; color: #262323;
+}
+.hs-field select { height: 50px; padding: 0 14px; }

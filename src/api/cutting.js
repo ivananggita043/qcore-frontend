@@ -91,3 +91,9 @@ export function cuttingUserDay(list, iso) {
     checks,
   };
 }
+
+export const fetchMyCuttingInspections = (signal) =>
+  apiFetch(`${BASE}/all`, { signal }).then((d) => (Array.isArray(d) ? d : []));
+
+export const updateCuttingInspection = (id, body) =>
+  apiFetch(`${BASE}/${id}`, { method: "PUT", body });
