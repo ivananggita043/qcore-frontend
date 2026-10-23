@@ -50,13 +50,15 @@ export default function UserForm({ mode, target, isSuper, mySection, lines, onBa
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
 
   // admin biasa: role dan section terkunci
-  const section = isSuper ? f.section : mySection;
   const roleLocked = !isSuper;
+  const isQc = f.role === "user";
+  const section = isSuper ? f.section : mySection;
 
   const sectionLines = useMemo(
     () => lineList.filter((l) => l.active && l.section === section),
     [lineList, section]
   );
+  const selectedLines = sectionLines.filter((l) => f.lineIds.includes(l.id));
 
   const toggleLine = (id) =>
     set(
@@ -68,12 +70,11 @@ export default function UserForm({ mode, target, isSuper, mySection, lines, onBa
     if (!f.nama.trim()) return "Name is required.";
     if (!f.username.trim()) return "Username is required.";
     if (/\s/.test(f.username)) return "Username cannot contain spaces.";
-    if (!isEdit && !f.password) return "Password is required.";
-    if (f.password && f.password.length < 6) return "Password must be at least 6 characters long.";
+    if (!f.password) return "Password is required.";
+    if (f.password.length < 6) return "Password must be at least 6 characters long.";
     if (!section) return "Please select a section.";
-    if (f.role === "user" && f.lineIds.length === 0)
+    if (isQc && f.lineIds.length === 0)
       return "Please select at least one line for the QC account.";
-    return "";
   };
 
   const run = async (action, doneMessage) => {
@@ -229,60 +230,89 @@ export default function UserForm({ mode, target, isSuper, mySection, lines, onBa
           )}
         </div>
 
-        {/* Section */}
-        <label className="uf-field">
+                {/* Section */}
+        <div className="uf-field">
           <span>Section</span>
           {isSuper ? (
-            <select
-              value={f.section}
-              onChange={(e) => setF((p) => ({ ...p, section: e.target.value, lineIds: [] }))}
-            >
-              <option value="">Select section</option>
-              {SECTION_KEYS.map((k) => (
-                <option key={k} value={k}>
-                  {SECTIONS[k].label}
-                </option>
-              ))}
-            </select>
+            <div className="uf-select">
+              <select
+                value={f.section}
+                onChange={(e) => setF((p) => ({ ...p, section: e.target.value, lineIds: [] }))}
+              >
+                <option value="">Select section</option>
+                {SECTION_KEYS.map((k) => (
+                  <option key={k} value={k}>
+                    {SECTIONS[k].label}
+                  </option>
+                ))}
+              </select>
+            </div>
           ) : (
             <p className="uf-fixed">{SECTIONS[mySection]?.label ?? mySection}</p>
           )}
-        </label>
+        </div>
 
         {/* Line (khusus QC) */}
-        {f.role === "user" && (
+        {isQc && (
           <div className="uf-field">
             <span>Line</span>
             {!section ? (
-              <p className="uf-hint">Select a section first to view the list of lines.</p>
+              <p className="uf-dd-off">Select a section first</p>
             ) : sectionLines.length === 0 ? (
               <p className="uf-hint">
                 There are no active lines in this section, or the list of lines failed to load.
                 Try the Refresh button.
               </p>
             ) : (
-              <div className="uf-lines">
-                {sectionLines.map((l) => (
-                  <label
-                    key={l.id}
-                    className={`uf-line ${f.lineIds.includes(l.id) ? "on" : ""}`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={f.lineIds.includes(l.id)}
-                      onChange={() => toggleLine(l.id)}
-                    />
-                    <span>{l.name}</span>
-                  </label>
-                ))}
-              </div>
+              <details className="uf-dd" key={section}>
+                <summary>
+                  {selectedLines.length ? (
+                    <span className="uf-chips">
+                      {selectedLines.map((l) => (
+                        <b key={l.id}>{l.name}</b>
+                      ))}
+                    </span>
+                  ) : (
+                    <span className="ph">Select line</span>
+                  )}
+                </summary>
+                <div className="uf-dd-panel">
+                  <div className="uf-dd-bar">
+                    <span>
+                      {selectedLines.length} of {sectionLines.length} selected
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => set("lineIds", [])}
+                      disabled={selectedLines.length === 0}
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <div className="uf-lines">
+                    {sectionLines.map((l) => (
+                      <label
+                        key={l.id}
+                        className={`uf-line ${f.lineIds.includes(l.id) ? "on" : ""}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={f.lineIds.includes(l.id)}
+                          onChange={() => toggleLine(l.id)}
+                        />
+                        <span>{l.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </details>
             )}
           </div>
         )}
 
         {/* Password */}
         <div className="uf-field">
-          <span>{isEdit ? "New password" : "Password"}</span>
+          <span>Password</span>
           <div className="uf-pass">
             <input
               type={showPass ? "text" : "password"}
@@ -296,7 +326,7 @@ export default function UserForm({ mode, target, isSuper, mySection, lines, onBa
             </button>
           </div>
           <p className="uf-hint">
-            {isEdit ? "Leave blank if you don't want to change the password." : "Minimum 6 characters."}
+            {isEdit ? "Required when saving. Enter a new password for this account." : "Minimum 6 characters."}
           </p>
         </div>
 

@@ -185,3 +185,52 @@
 }
 .us-fab:active { background: #2a387f; }
 .us-fab:focus-visible { outline: 3px solid #ff9d00; outline-offset: 2px; }
+
+/* Dropdown section */
+.uf-select { position: relative; }
+.uf-select select {
+  width: 100%; box-sizing: border-box; min-height: 52px; padding: 10px 44px 10px 14px;
+  border: 1.5px solid #b9b9b9; border-radius: 12px; background: #fff;
+  font: inherit; font-size: 17px; color: #262323; appearance: none; -webkit-appearance: none;
+}
+.uf-select::after {
+  content: ""; position: absolute; right: 18px; top: 50%; width: 8px; height: 8px;
+  border-right: 2px solid #6b6b6b; border-bottom: 2px solid #6b6b6b;
+  transform: translateY(-70%) rotate(45deg); pointer-events: none;
+}
+.uf-select select:focus { outline: 3px solid #c7cdf0; border-color: #3748a1; }
+
+/* Dropdown line (pilih banyak) */
+.uf-dd { border: 1.5px solid #b9b9b9; border-radius: 12px; background: #fff; }
+.uf-dd[open] { border-color: #3748a1; }
+.uf-dd summary {
+  position: relative; display: flex; align-items: center; min-height: 52px;
+  padding: 8px 44px 8px 14px; font-size: 17px; cursor: pointer; list-style: none;
+}
+.uf-dd summary::-webkit-details-marker { display: none; }
+.uf-dd summary::after {
+  content: ""; position: absolute; right: 18px; top: 50%; width: 8px; height: 8px;
+  border-right: 2px solid #6b6b6b; border-bottom: 2px solid #6b6b6b;
+  transform: translateY(-70%) rotate(45deg); transition: transform .15s;
+}
+.uf-dd[open] summary::after { transform: translateY(-30%) rotate(-135deg); }
+.uf-dd summary .ph { color: #6b6b6b; }
+.uf-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.uf-chips b {
+  padding: 4px 10px; border-radius: 999px; background: #e9ecfa; color: #3748a1;
+  font-size: 15px; font-weight: 600;
+}
+.uf-dd-panel { border-top: 1px solid #eee; padding: 10px 12px 14px; max-height: 300px; overflow: auto; }
+.uf-dd-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px; font-size: 14px; color: #6b6b6b;
+}
+.uf-dd-bar button {
+  min-height: 40px; padding: 0 12px; border: 0; background: none;
+  color: #3748a1; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+}
+.uf-dd-bar button:disabled { color: #b0b0b0; cursor: default; }
+.uf-dd-off {
+  margin: 0; padding: 14px; border: 1.5px dashed #c9c9c9; border-radius: 12px;
+  background: #f7f7f7; color: #6b6b6b; font-size: 16px;
+}

@@ -8,6 +8,7 @@ import {
 } from "../config/sections.js";
 import { userDay } from "../mock/dashboardData.js";
 import "./DashboardUser.css";
+import { useCuttingInspections, cuttingUserDay } from "../api/cutting.js";
 
 /* ---------- helper tanggal ---------- */
 const MONTHS = [
@@ -54,9 +55,15 @@ export default function DashboardUser({
   const [page, setPage] = useState("home");
   const dateRef = useRef(null);
 
+  const isCutting = user.section === "cutting";
+  const live = useCuttingInspections(isCutting);
+
   const { summary, checks } = useMemo(
-    () => userDay(user.section ?? "sewing", date),
-    [user.section, date]
+    () =>
+      isCutting
+        ? cuttingUserDay(live.list, date)
+        : userDay(user.section ?? "sewing", date),
+    [isCutting, live.list, user.section, date]
   );
   const hourly = SECTIONS[user.section]?.frequency === "hourly";
 
@@ -147,7 +154,7 @@ export default function DashboardUser({
             <Stat value={summary.inspections} label="inspections" />
             <Stat value={summary.defect} label="defect" red />
             <Stat value={`${summary.defectPct}%`} label="% defect" red />
-            <Stat value={summary.qty} label="QTY Transfer" />
+            <Stat value={summary.qty} label={isCutting ? "QTY Inspect" : "QTY Transfer"} />
           </div>
         </section>
 
@@ -162,6 +169,9 @@ export default function DashboardUser({
         <h2 className="recent-title">
           {hourly ? "Checks per Hour" : "Recent Check"}
         </h2>
+
+        {isCutting && live.loading && <p className="empty">Loading…</p>}
+        {isCutting && live.error && <p className="empty" role="alert">{live.error}</p>}
 
         {hourly ? (
           slots.length === 0 ? (
@@ -293,6 +303,7 @@ function CheckCard({ c, date }) {
       </span>
       <span className="check-meta">
         {c.style} - {c.qty} pcs
+        {c.process && <span className="check-meta">{c.process}</span>}
       </span>
     </li>
   );

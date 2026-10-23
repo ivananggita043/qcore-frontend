@@ -362,13 +362,12 @@ export default function App() {
       );
     }
 
-    if (current === "cutting") {
+      if (current === "cutting") {
       return (
         <CuttingCheck
           onBack={() => setScreen("dashboard")}
+          lineIds={session?.user?.lineIds ?? []}
           onFinish={(data) => {
-            // TODO: kirim ke POST /cutting-inspections (waktu submit dicatat server)
-            console.log("cutting QC:", data);
             setResult(buildCuttingResult(data));
             setScreen("success");
           }}
