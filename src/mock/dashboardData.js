@@ -441,3 +441,61 @@ export const statsManpower = (secs) => {
   const rows = secs.map((s) => ({ section: s, name: MP_NAMES[s] ?? s, count: MANPOWER[s] ?? 0 }));
   return { total: rows.reduce((n, r) => n + r.count, 0), rows };
 };
+
+/* ================= statistik per buyer & style (data tiruan) ================= */
+export function statsBuyerStyle(section, endISO, days) {
+  const end = asDate(endISO);
+  const dates = [];
+  for (let i = days - 1; i >= 0; i--) dates.push(dayKey(new Date(end.getTime() - i * 864e5)));
+
+  const sum = (a) => a.reduce((x, y) => x + y, 0);
+  const rate = (d, n) => (n ? +((d / n) * 100).toFixed(1) : 0);
+  const zeros = () => Array(days).fill(0);
+  const series = (def, insp) => insp.map((n, i) => (n ? rate(def[i], n) : null));
+
+  const acc = {};
+  const secDef = {};
+  dates.forEach((iso, di) => {
+    Object.values(buyerRaw([section], iso)).forEach((x) => {
+      const o = (acc[`${x.buyer}|${x.style}`] ||= {
+        buyer: x.buyer, style: x.style, insp: zeros(), def: zeros(),
+      });
+      o.insp[di] = x.inspections;
+      o.def[di] = x.defects;
+    });
+    sectionStats(section, asDate(iso)).topDefects.forEach((d) => {
+      secDef[d.name] = (secDef[d.name] || 0) + d.count;
+    });
+  });
+
+  const items = Object.values(acc).filter((o) => sum(o.insp) > 0);
+  const secTotal = sum(Object.values(secDef)) || 1;
+  const topOf = (defects) =>
+    Object.entries(secDef)
+      .map(([name, c]) => ({ name, count: Math.round((c * defects) / secTotal) }))
+      .filter((d) => d.count > 0)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+  const pack = (name, list, extra = {}) => {
+    const insp = list.reduce((a, o) => a.map((v, i) => v + o.insp[i]), zeros());
+    const def = list.reduce((a, o) => a.map((v, i) => v + o.def[i]), zeros());
+    const inspections = sum(insp);
+    const defects = sum(def);
+    return {
+      name, inspections, defects,
+      rate: rate(defects, inspections),
+      series: series(def, insp),
+      topDefects: topOf(defects),
+      ...extra,
+    };
+  };
+
+  const styles = items.map((o) => pack(o.style, [o], { buyer: o.buyer }));
+  const buyers = [...new Set(items.map((o) => o.buyer))].map((b) => {
+    const list = items.filter((o) => o.buyer === b);
+    return pack(b, list, { styles: list.map((o) => pack(o.style, [o], { buyer: b })) });
+  });
+
+  return { dates, section: pack(NAMES[section] ?? section, items), buyers, styles };
+}

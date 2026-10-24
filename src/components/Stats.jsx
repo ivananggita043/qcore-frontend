@@ -9,6 +9,7 @@ import {
 } from "../mock/dashboardData.js";
 import "./Stats.css";
 import { SECTIONS } from "../config/sections.js";
+import StatsBuyerStyle from "./StatsBuyerStyle.jsx";
 
 const ALL = Object.keys(SECTIONS);
 const NAMES = Object.fromEntries(
@@ -676,6 +677,9 @@ export default function Stats({ isSuper, section = "sewing", onBack }) {
             />
           </section>
         </div>
+        {(scope === "washing" || scope === "finishing") && (
+          <StatsBuyerStyle section={scope} days={days} endISO={TODAY} />
+        )}
       </div>
     </main>
   );

@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { SECTIONS } from "../config/sections.js";
 import { sectionDay } from "../mock/dashboardData.js";
+import { useCuttingStats } from "../api/cutting.js";
 import "./Records.css";
 
 const ALL = Object.keys(SECTIONS);
@@ -20,17 +21,32 @@ const longDate = (iso) => { const d = fromISO(iso); return `${d.getDate()} ${MON
 const TODAY_D = new Date();
 const TODAY = toISO(TODAY_D);
 
+// data Cutting yang belum/gagal dimuat
+const EMPTY_CUT = {
+  section: "cutting", name: "Cutting", inspections: 0, defects: 0,
+  passRate: 0, activeQc: null, topDefects: [], unit: "pcs",
+};
+
 function daysBetween(start, end) {
   const out = [];
   for (let d = start; d <= end; d = addDays(d, 1)) out.push(toISO(d));
   return out;
 }
 
-function agg(secs, isos) {
+// cutKey = id laporan Cutting untuk periode ini (Cutting diambil dari backend, bukan dijumlah per hari)
+function agg(secs, isos, cutKey, live) {
   let inspections = 0;
   let defects = 0;
-  for (const iso of isos) {
-    for (const s of secs) {
+  for (const s of secs) {
+    if (s === "cutting") {
+      const x = cutKey ? live[cutKey] : null;
+      if (x && !x.error) {
+        inspections += x.inspections;
+        defects += x.defects;
+      }
+      continue;
+    }
+    for (const iso of isos) {
       const x = sectionDay(s, iso);
       inspections += x.inspections;
       defects += x.defects;
@@ -43,11 +59,17 @@ function agg(secs, isos) {
   };
 }
 
-function topDefectsOf(secs, isos, limit = 3) {
+function topDefectsOf(secs, isos, limit, cutKey, live) {
   const m = {};
-  for (const iso of isos)
-    for (const s of secs)
+  for (const s of secs) {
+    if (s === "cutting") {
+      const x = cutKey ? live[cutKey] : null;
+      (x && !x.error ? x.topDefects : []).forEach((d) => (m[d.name] = (m[d.name] || 0) + d.count));
+      continue;
+    }
+    for (const iso of isos)
       sectionDay(s, iso).topDefects.forEach((d) => (m[d.name] = (m[d.name] || 0) + d.count));
+  }
   return Object.entries(m)
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count)
@@ -112,19 +134,63 @@ export default function Records({ user, isSuper, section = "sewing", onBack }) {
     else el?.click();
   };
 
-  const todayRows = useMemo(() => secs.map((s) => sectionDay(s, TODAY)), [secs.join()]);
-  const todayTotal = useMemo(() => agg(secs, [TODAY]), [secs.join()]);
+  /* ---------- data Cutting dari backend ---------- */
+  const hasCut = secs.includes("cutting");
+  const cutOnly = secs.length === 1 && secs[0] === "cutting";
+  const unit = cutOnly ? "pcs inspected" : "inspections";
 
-  const picked1 = useMemo(() => agg(secs, [picked]), [picked, secs.join()]);
-  const pickedBy = useMemo(() => secs.map((s) => sectionDay(s, picked)), [picked, secs.join()]);
-  const pickedTop = useMemo(() => topDefectsOf(secs, [picked]), [picked, secs.join()]);
+  const rawPeriods = useMemo(
+    () => (period === "daily" ? [] : buildPeriods(period)),
+    [period]
+  );
+
+  const reqs = useMemo(() => {
+    if (!hasCut) return [];
+    const list = [{ id: `d:${TODAY}`, kind: "daily", arg: TODAY }];
+    if (period === "daily") list.push({ id: `d:${picked}`, kind: "daily", arg: picked });
+    if (period === "weekly")
+      rawPeriods.forEach((p) => list.push({ id: `w:${p.days[0]}`, kind: "weekly", arg: p.days[0] }));
+    if (period === "monthly")
+      rawPeriods.forEach((p) => {
+        const [y, m] = p.days[0].split("-");
+        list.push({ id: `m:${y}-${m}`, kind: "monthly", arg: { year: Number(y), month: Number(m) } });
+      });
+    return list;
+  }, [hasCut, period, picked, rawPeriods]);
+
+  const live = useCuttingStats(reqs, hasCut);
+  const cutLoading = hasCut && reqs.some((r) => !(r.id in live));
+  const cutError = hasCut ? Object.values(live).find((x) => x?.error)?.error : "";
+
+  const dayRow = (s, iso) => {
+    if (s !== "cutting") return sectionDay(s, iso);
+    const x = live[`d:${iso}`];
+    return x && !x.error ? x : EMPTY_CUT;
+  };
+
+  const periodKey = (p) => {
+    if (period === "weekly") return `w:${p.days[0]}`;
+    if (period === "monthly") {
+      const [y, m] = p.days[0].split("-");
+      return `m:${y}-${m}`;
+    }
+    return undefined; // yearly: belum ada di backend
+  };
+
+  const todayRows = useMemo(() => secs.map((s) => dayRow(s, TODAY)), [secs.join(), live]); // eslint-disable-line react-hooks/exhaustive-deps
+  const todayTotal = useMemo(() => agg(secs, [TODAY], `d:${TODAY}`, live), [secs.join(), live]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const picked1 = useMemo(() => agg(secs, [picked], `d:${picked}`, live), [picked, secs.join(), live]); // eslint-disable-line react-hooks/exhaustive-deps
+  const pickedBy = useMemo(() => secs.map((s) => dayRow(s, picked)), [picked, secs.join(), live]); // eslint-disable-line react-hooks/exhaustive-deps
+  const pickedTop = useMemo(
+    () => topDefectsOf(secs, [picked], 3, `d:${picked}`, live),
+    [picked, secs.join(), live] // eslint-disable-line react-hooks/exhaustive-deps
+  );
 
   const periods = useMemo(
     () =>
-      period === "daily"
-        ? []
-        : buildPeriods(period).map((p) => ({ ...p, ...agg(secs, p.days) })),
-    [period, secs.join()]
+      rawPeriods.map((p) => ({ ...p, ...agg(secs, p.days, periodKey(p), live) })),
+    [rawPeriods, period, secs.join(), live] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   return (
@@ -163,8 +229,11 @@ export default function Records({ user, isSuper, section = "sewing", onBack }) {
         </div>
       )}
 
+      {cutError && <p className="rc-none" role="alert">{cutError}</p>}
+
       {/* ---------- 1. hari ini ---------- */}
       <Acc title="Today " hint={longDate(TODAY)} open={open.today} onToggle={() => toggle("today")}>
+        {cutLoading && <p className="rc-none">Loading Cutting data…</p>}
         {secs.length > 1 && (
           <div className="rc-total">
             <Stat v={num(todayTotal.inspections)} l="inspections" />
@@ -183,9 +252,9 @@ export default function Records({ user, isSuper, section = "sewing", onBack }) {
                 <i style={{ width: `${r.passRate}%` }} />
               </div>
               <div className="meta">
-                <span>{num(r.inspections)} inspections</span>
+                <span>{num(r.inspections)} {r.unit === "pcs" ? "pcs inspected" : "inspections"}</span>
                 <span>{num(r.defects)} defects</span>
-                <span>{r.activeQc} active QC</span>
+                {r.activeQc != null && <span>{r.activeQc} active QC</span>}
               </div>
             </li>
           ))}
@@ -229,6 +298,12 @@ export default function Records({ user, isSuper, section = "sewing", onBack }) {
           <option value="yearly">Yearly</option>
         </select>
 
+        {hasCut && period === "yearly" && (
+          <p className="rc-topdef">
+            Cutting is not included: the yearly report is not available in the backend yet.
+          </p>
+        )}
+
         {period === "daily" ? (
           <>
             <div className="rc-datebar">
@@ -251,7 +326,7 @@ export default function Records({ user, isSuper, section = "sewing", onBack }) {
 
             <div className="rc-day">
               <div className="rc-total">
-                <Stat v={num(picked1.inspections)} l="inspections" />
+                <Stat v={num(picked1.inspections)} l={unit} />
                 <Stat v={num(picked1.defects)} l="defects" tone="red" />
                 <Stat v={rate(picked1.passRate)} l="pass rate" tone="green" />
               </div>
@@ -282,7 +357,7 @@ export default function Records({ user, isSuper, section = "sewing", onBack }) {
                   {p.sub && <small>{p.sub}</small>}
                 </div>
                 <div className="nums">
-                  <span>{num(p.inspections)} inspections</span>
+                  <span>{num(p.inspections)} {cutOnly ? "pcs inspected" : "inspections"}</span>
                   <span>{num(p.defects)} defects</span>
                 </div>
                 <b className={level(p.passRate)}>{rate(p.passRate)}</b>

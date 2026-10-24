@@ -1,5 +1,6 @@
 import { apiFetch } from "./client.js";
 import { useEffect, useState } from "react";
+import { loadSession } from "../auth/session.js";
 
 const BASE = "/user/cutting-inspections";
 
@@ -97,3 +98,62 @@ export const fetchMyCuttingInspections = (signal) =>
 
 export const updateCuttingInspection = (id, body) =>
   apiFetch(`${BASE}/${id}`, { method: "PUT", body });
+
+const reportBase = () =>
+  loadSession()?.user?.role === "super_admin" ? "/super-admin/cutting-reports" : "/admin/cutting-reports";
+
+// kind: "daily" | "weekly" (arg = "YYYY-MM-DD") | "monthly" (arg = { year, month })
+export function fetchCuttingReport(kind, arg, signal) {
+  const q = kind === "monthly" ? `year=${arg.year}&month=${arg.month}` : `date=${arg}`;
+  return apiFetch(`${reportBase()}/${kind}?${q}`, { signal });
+}
+
+// laporan backend -> bentuk yang dipakai halaman QC Records
+export function adaptCuttingReport(r) {
+  const insp = r?.totalQuantityInspect ?? 0;
+  const defects = r?.totalDefects ?? 0;
+  const byType = {};
+  (r?.processSummaries ?? []).forEach((ps) =>
+    (ps.detailRows ?? []).forEach((row) => {
+      byType[row.defectTypeName] = (byType[row.defectTypeName] || 0) + (row.totalDefects || 0);
+    })
+  );
+  return {
+    section: "cutting",
+    name: "Cutting",
+    inspections: insp,
+    defects,
+    passRate: insp ? +((1 - defects / insp) * 100).toFixed(1) : 0,
+    activeQc: null,
+    unit: "pcs",
+    topDefects: Object.entries(byType)
+      .map(([name, count]) => ({ name, count }))
+      .filter((d) => d.count > 0)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5),
+  };
+}
+
+// ambil banyak laporan sekaligus; hasil disimpan per id supaya tidak diminta ulang
+// requests: [{ id, kind, arg }]
+export function useCuttingStats(requests, enabled) {
+  const [cache, setCache] = useState({});
+  const need = enabled ? requests.filter((r) => !(r.id in cache)) : [];
+  const sig = need.map((r) => r.id).join(",");
+
+  useEffect(() => {
+    if (!sig) return;
+    const ctrl = new AbortController();
+    need.forEach((r) =>
+      fetchCuttingReport(r.kind, r.arg, ctrl.signal)
+        .then((rep) => setCache((c) => ({ ...c, [r.id]: adaptCuttingReport(rep) })))
+        .catch((e) => {
+          if (e?.name === "AbortError") return;
+          setCache((c) => ({ ...c, [r.id]: { error: e.message || "Failed to load Cutting data." } }));
+        })
+    );
+    return () => ctrl.abort();
+  }, [sig]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return cache;
+}
