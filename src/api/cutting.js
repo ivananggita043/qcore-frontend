@@ -68,7 +68,7 @@ export function cuttingUserDay(list, iso) {
   const checks = rows.map((x) => {
     const items = x.items ?? [];
     const q = items.reduce((s, i) => s + (i.quantityInspect || 0), 0);
-    const d = items.reduce((s, i) => s + (i.totalDefect || 0), 0);
+        const d = items.reduce((s, i) => s + (i.quantityDefect || 0), 0);
     qty += q;
     defect += d;
     const t = new Date(x.createdAt);
@@ -115,7 +115,7 @@ export function adaptCuttingReport(r) {
   const byType = {};
   (r?.processSummaries ?? []).forEach((ps) =>
     (ps.detailRows ?? []).forEach((row) => {
-      byType[row.defectTypeName] = (byType[row.defectTypeName] || 0) + (row.totalDefects || 0);
+      byType[row.defectTypeName] = (byType[row.defectTypeName] || 0) + (row.quantityDefect || 0);
     })
   );
   return {

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { PANELS } from "../config/cuttingProcesses.js";
 import {
   PROCESS_ENUM,
   fetchDefectTypes,
@@ -27,7 +26,7 @@ function toRow(x) {
   const items = x.items ?? [];
   const t = new Date(x.createdAt);
   const qty = items.reduce((s, i) => s + (i.quantityInspect || 0), 0);
-  const defect = items.reduce((s, i) => s + (i.totalDefect || 0), 0);
+  const defect = items.reduce((s, i) => s + (i.quantityDefects || 0), 0);
   const first = items[0];
   const process = LABEL[x.processCheck] ?? x.processCheck;
   const id = `CUT-${String(x.id).slice(0, 4).toUpperCase()}`;
@@ -68,11 +67,9 @@ function EditSheet({ row, onClose, onSave }) {
       lot: i.lot ?? "",
       operator: i.operatorName ?? "",
       inspect: String(i.quantityInspect ?? ""),
+      defect: String(i.quantityDefect ?? 0),
       typeId: i.defectTypeId ?? "",
       typeName: i.defectTypeName ?? "",
-      panels: Object.fromEntries(
-        PANELS.map((p) => [p, String((i.defects ?? []).find((d) => d.panel === p)?.quantity ?? 0)])
-      ),
     }))
   );
   const [types, setTypes] = useState([]);
@@ -91,13 +88,6 @@ function EditSheet({ row, onClose, onSave }) {
 
   const upd = (n, change) =>
     setItems((list) => list.map((it, idx) => (idx === n ? { ...it, ...change } : it)));
-  const setPanel = (n, p, v) =>
-    setItems((list) =>
-      list.map((it, idx) =>
-        idx === n ? { ...it, panels: { ...it.panels, [p]: v.replace(/\D/g, "") } } : it
-      )
-    );
-  const total = (it) => Object.values(it.panels).reduce((a, b) => a + (Number(b) || 0), 0);
 
   const save = async () => {
     setErr("");
@@ -113,10 +103,9 @@ function EditSheet({ row, onClose, onSave }) {
       seen.add(key);
       const insp = Number(it.inspect);
       if (!Number.isInteger(insp) || insp < 1) return setErr(`${tag}: QTY INSP must be a whole number, minimum 1.`);
+      if (it.defect === "") return setErr(`${tag}: QTY DEFF is required (enter 0 if there is none).`);
+      if (Number(it.defect) > insp) return setErr(`${tag}: QTY DEFF is greater than QTY INSP.`);
       if (!it.typeId) return setErr(`${tag}: select a defect type.`);
-      const t = total(it);
-      if (t < 1) return setErr(`${tag}: enter the defect quantity for at least one panel.`);
-      if (t > insp) return setErr(`${tag}: defect total (${t}) is greater than QTY INSP.`);
     }
 
     setBusy(true);
@@ -129,14 +118,11 @@ function EditSheet({ row, onClose, onSave }) {
           buyerName: it.buyer.trim(),
           styleCode: it.style.trim(),
           colorName: it.color.trim(),
-          defectTypeId: it.typeId,
           lot: it.lot.trim(),
           operatorName: it.operator.trim(),
           quantityInspect: Number(it.inspect),
-          defects: PANELS.filter((p) => Number(it.panels[p]) > 0).map((p) => ({
-            panel: p,
-            quantity: Number(it.panels[p]),
-          })),
+          quantityDefect: Number(it.defect),
+          defectTypeId: it.typeId,
         })),
       });
     } catch (e) {
@@ -184,23 +170,18 @@ function EditSheet({ row, onClose, onSave }) {
               </label>
 
               <label className="hs-field">
+                <span>QTY DEFF (pcs) *</span>
+                <input inputMode="numeric" value={it.defect}
+                       onChange={(e) => upd(n, { defect: e.target.value.replace(/\D/g, "") })} />
+              </label>
+
+              <label className="hs-field">
                 <span>Defect type *</span>
                 <select value={it.typeId} onChange={(e) => upd(n, { typeId: e.target.value })}>
                   <option value="">- select -</option>
                   {options.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
               </label>
-
-              <p className="hs-proc"><b>Defect per panel</b></p>
-              <div className="hs-panels">
-                {PANELS.map((p) => (
-                  <label key={p}>
-                    {p}
-                    <input inputMode="numeric" value={it.panels[p]} onChange={(e) => setPanel(n, p, e.target.value)} />
-                  </label>
-                ))}
-              </div>
-              <p className="hs-total">Total defect: {total(it)} pcs</p>
             </section>
           );
         })}

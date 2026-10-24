@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import StatusBar from "./StatusBar.jsx";
-import { CUTTING_PROCESSES, PANELS } from "../config/cuttingProcesses.js";
+import { CUTTING_PROCESSES } from "../config/cuttingProcesses.js";
 import { fetchDefectTypes, createCuttingInspection, PROCESS_ENUM } from "../api/cutting.js";
 import "./CuttingCheck.css";
 
@@ -9,7 +9,6 @@ const emptyStyle = () => ({
   style: "",
   color: "",
   lot: "",
-  panels: Object.fromEntries(PANELS.map((p) => [p, 0])),
   inspect: "",
   defect: "",
   operator: "",
@@ -17,9 +16,7 @@ const emptyStyle = () => ({
   otherNote: "",
 });
 
-const emptyProcess = () => ({ styles: [emptyStyle()], submitted: false });
-
-const sumPanels = (s) => Object.values(s.panels).reduce((a, b) => a + b, 0);
+const emptyProcess = () => ({ styles: [emptyStyle()] });
 
 // pending (kosong) -> started (sebagian terisi) -> ok / defect
 const styleStatus = (s) => {
@@ -27,8 +24,7 @@ const styleStatus = (s) => {
   const def = Number(s.defect) || 0;
   if (def > 0 || s.defectTypes.length > 0) return "defect";
   if (insp > 0) return "ok";
-  const touched = s.operator.trim() !== "" || sumPanels(s) > 0;
-  return touched ? "started" : "pending";
+  return s.operator.trim() !== "" || s.defect !== "" ? "started" : "pending";
 };
 
 const percent = (s) => {
@@ -67,18 +63,11 @@ export default function CuttingCheck({ onBack, onFinish, lineIds = [] }) {
   const nameOf = (key, id) => (types[key] ?? []).find((t) => t.id === id)?.name ?? id;
 
   const filledStyles = d.styles.filter((s) => styleStatus(s) !== "pending");
-  const canNext = filledStyles.length === 0; // boleh ganti pilihan proses hanya jika belum ada isian
+  const canSwitch = filledStyles.length === 0; // ganti pilihan proses hanya jika belum ada isian
 
-  const stepState = (p) => {
-    const x = data[p.key];
-    if (x.submitted) return "ok";
-    return x.styles.some((s) => styleStatus(s) !== "pending") ? "started" : "pending";
-  };
-  const bannerState = d.submitted
-    ? "ok"
-    : d.styles.some((s) => styleStatus(s) === "defect")
-    ? "defect"
-    : "";
+  const stepState = (p) =>
+    data[p.key].styles.some((s) => styleStatus(s) !== "pending") ? "started" : "pending";
+  const bannerState = d.styles.some((s) => styleStatus(s) === "defect") ? "defect" : "";
 
   // geser stepper ke proses aktif & kembali ke atas halaman
   useEffect(() => {
@@ -120,8 +109,6 @@ export default function CuttingCheck({ onBack, onFinish, lineIds = [] }) {
 
   const onDigits = (i, field) => (e) => upd(i, { [field]: e.target.value.replace(/\D/g, "") });
   const onText = (i, field) => (e) => upd(i, { [field]: e.target.value });
-  const stepPanel = (i, name, delta) =>
-    upd(i, (s) => ({ panels: { ...s.panels, [name]: Math.max(0, s.panels[name] + delta) } }));
   const toggleDefect = (i, id) =>
     upd(i, (s) => ({ defectTypes: s.defectTypes[0] === id ? [] : [id] }));
 
@@ -138,12 +125,31 @@ export default function CuttingCheck({ onBack, onFinish, lineIds = [] }) {
       return { ...all, [proc.key]: { ...p, styles: p.styles.filter((_, idx) => idx !== i) } };
     });
 
-  /* ---------- kirim satu proses ---------- */
+  /* ---------- pilih proses lain ---------- */
+  const selectProcess = (i) => {
+    if (i === step) return;
+    if (!canSwitch) return setError("Submit this process first before choosing another one.");
+    const nextKey = CUTTING_PROCESSES[i].key;
+    // isi otomatis identitas style dari proses ini ke proses tujuan (jika masih kosong)
+    setData((all) => {
+      const target = all[nextKey];
+      const pristine = target.styles.every(
+        (s) => styleStatus(s) === "pending" && !s.buyer && !s.style && !s.color && !s.lot
+      );
+      if (!pristine) return all;
+      const carried = all[proc.key].styles
+        .filter((s) => s.buyer || s.style || s.color || s.lot)
+        .map((s) => ({ ...emptyStyle(), buyer: s.buyer, style: s.style, color: s.color, lot: s.lot }));
+      return carried.length ? { ...all, [nextKey]: { ...target, styles: carried } } : all;
+    });
+    setStep(i);
+  };
+
+  /* ---------- kirim proses lalu akhiri sesi ---------- */
   const submitProcess = async () => {
     setError("");
     if (!lineId) return setError("Your account has no cutting line. Contact your admin.");
-    if (filledStyles.length === 0)
-      return setError("Fill in at least one style with defects before submitting.");
+    if (filledStyles.length === 0) return setError("Fill in at least one style before submitting.");
 
     const seen = new Set();
     for (let i = 0; i < d.styles.length; i++) {
@@ -155,14 +161,11 @@ export default function CuttingCheck({ onBack, onFinish, lineIds = [] }) {
       const key = [s.buyer, s.style, s.color, s.lot].map((x) => x.trim().toLowerCase()).join("|");
       if (seen.has(key)) return setError(`${tag}: same Buyer, Style, Color and LOT is already added.`);
       seen.add(key);
-      const total = sumPanels(s);
       if (!Number(s.inspect)) return setError(`${tag}: QTY INSP is required.`);
-      if (s.defectTypes.length !== 1) return setError(`${tag}: select one defect type. A style without defects can't be sent yet, remove it instead.`);
+      if (s.defect === "") return setError(`${tag}: QTY DEFF is required (enter 0 if there is none).`);
+      if (Number(s.defect) > Number(s.inspect)) return setError(`${tag}: QTY DEFF is greater than QTY INSP.`);
+      if (s.defectTypes.length !== 1) return setError(`${tag}: select one defect type.`);
       if (!s.operator.trim()) return setError(`${tag}: operator name is required.`);
-      if (total === 0) return setError(`${tag}: add the defective panels with +.`);
-      if (total > Number(s.inspect)) return setError(`${tag}: panel total is greater than QTY INSP.`);
-      if (s.defect !== "" && Number(s.defect) !== total)
-        return setError(`${tag}: QTY DEFF must equal the panel total (${total}).`);
     }
 
     const notes = d.styles
@@ -180,13 +183,14 @@ export default function CuttingCheck({ onBack, onFinish, lineIds = [] }) {
           buyerName: s.buyer.trim(),
           styleCode: s.style.trim(),
           colorName: s.color.trim(),
-          defectTypeId: s.defectTypes[0],
           lot: s.lot.trim(),
           operatorName: s.operator.trim(),
           quantityInspect: Number(s.inspect),
-          defects: PANELS.filter((n) => s.panels[n] > 0).map((n) => ({ panel: n, quantity: s.panels[n] })),
+          quantityDefect: Number(s.defect),
+          defectTypeId: s.defectTypes[0],
         })),
       });
+
       onFinish?.({
         section: "cutting",
         processes: [
@@ -199,7 +203,7 @@ export default function CuttingCheck({ onBack, onFinish, lineIds = [] }) {
               lot: s.lot.trim(),
               operator: s.operator.trim(),
               inspect: Number(s.inspect) || 0,
-              defect: sumPanels(s),
+              defect: Number(s.defect) || 0,
               defectTypes: s.defectTypes.map((id) => nameOf(proc.key, id)),
             })),
           },
@@ -210,29 +214,6 @@ export default function CuttingCheck({ onBack, onFinish, lineIds = [] }) {
     } finally {
       setBusy(false);
     }
-  };
-
-  /* ---------- pindah proses / selesai ---------- */
-    // pilih proses lain (hanya jika proses ini sudah dikirim atau belum diisi)
-  const selectProcess = (i) => {
-    if (i === step) return;
-    if (!canNext) {
-      return setError("Submit this process first before choosing another one.");
-    }
-    const nextKey = CUTTING_PROCESSES[i].key;
-    // isi otomatis identitas style dari proses ini ke proses tujuan (jika masih kosong)
-    setData((all) => {
-      const target = all[nextKey];
-      const pristine =
-        !target.submitted &&
-        target.styles.every((s) => styleStatus(s) === "pending" && !s.buyer && !s.style && !s.color && !s.lot);
-      if (!pristine) return all;
-      const carried = all[proc.key].styles
-        .filter((s) => s.buyer || s.style || s.color || s.lot)
-        .map((s) => ({ ...emptyStyle(), buyer: s.buyer, style: s.style, color: s.color, lot: s.lot }));
-      return carried.length ? { ...all, [nextKey]: { ...target, styles: carried } } : all;
-    });
-    setStep(i);
   };
 
   return (
@@ -251,29 +232,26 @@ export default function CuttingCheck({ onBack, onFinish, lineIds = [] }) {
 
       <p className="cc-hint">Choose a process, fill it in, then tap Submit. Submitting ends the session.</p>
 
-      {/* Stepper proses (hanya penanda) */}
+      {/* Pilihan proses */}
       <nav className="cc-steps" aria-label="Process check">
         <ol>
-          {CUTTING_PROCESSES.map((p, i) => {
-            const st = stepState(p);
-            return (
-              <li
-                key={p.key}
-                ref={(el) => (stepRefs.current[i] = el)}
-                className={`cc-step ${st} ${i === step ? "current" : ""}`}
+          {CUTTING_PROCESSES.map((p, i) => (
+            <li
+              key={p.key}
+              ref={(el) => (stepRefs.current[i] = el)}
+              className={`cc-step ${stepState(p)} ${i === step ? "current" : ""}`}
+            >
+              <button
+                type="button"
+                aria-pressed={i === step}
+                aria-current={i === step ? "step" : undefined}
+                onClick={() => selectProcess(i)}
               >
-                <button
-                  type="button"
-                  aria-pressed={i === step}
-                  aria-current={i === step ? "step" : undefined}
-                  onClick={() => selectProcess(i)}
-                >
-                  <span className="dot">{st === "ok" ? "✓" : ""}</span>
-                  <span className="lbl">{p.label}</span>
-                </button>
-              </li>
-            );
-          })}
+                <span className="dot"></span>
+                <span className="lbl">{p.label}</span>
+              </button>
+            </li>
+          ))}
         </ol>
       </nav>
 
@@ -291,7 +269,7 @@ export default function CuttingCheck({ onBack, onFinish, lineIds = [] }) {
           </label>
         )}
 
-        <fieldset className="cc-set" disabled={d.submitted || busy}>
+        <fieldset className="cc-set" disabled={busy}>
           {d.styles.map((s, i) => {
             const otherSelected = typeList.some((t) => t.name === "Other" && s.defectTypes.includes(t.id));
             return (
@@ -309,28 +287,6 @@ export default function CuttingCheck({ onBack, onFinish, lineIds = [] }) {
 
                 <Field label="LOT" value={s.lot} onChange={onText(i, "lot")} />
                 <Field label="Color" value={s.color} onChange={onText(i, "color")} />
-
-                {/* Panel */}
-                <div className="cc-block">
-                  <p className="cc-cap">PANEL</p>
-                  <div className="cc-panels">
-                    {PANELS.map((name) => {
-                      const n = s.panels[name];
-                      return (
-                        <div key={name} className={`cc-pill ${n > 0 ? "on" : ""}`}>
-                          <span className="nm">{name}</span>
-                          <div className="ctl">
-                            <button type="button" aria-label={`Reduce ${name}`}
-                                    disabled={n === 0} onClick={() => stepPanel(i, name, -1)}>−</button>
-                            <output>{n}</output>
-                            <button type="button" aria-label={`Add ${name}`}
-                                    onClick={() => stepPanel(i, name, 1)}>+</button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
 
                 <Field label="QTY INSP" inputMode="numeric" value={s.inspect} onChange={onDigits(i, "inspect")} />
                 <Field label="QTY DEFF" inputMode="numeric" value={s.defect} onChange={onDigits(i, "defect")} />
@@ -392,12 +348,11 @@ export default function CuttingCheck({ onBack, onFinish, lineIds = [] }) {
 
         {error && <p className="cc-warn cc-err" role="alert">{error}</p>}
 
-        {/* Navigasi */}
         <div className="cc-actions">
           <button type="button" className="cc-submit" onClick={submitProcess} disabled={busy}>
             {busy ? "Sending…" : "Submit"}
           </button>
-        </div>      
+        </div>
       </div>
     </main>
   );

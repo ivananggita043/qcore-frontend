@@ -1,0 +1,43 @@
+/* ========== Tablet (≥ 768px) ========== */
+@media (min-width: 768px) {
+  .dash-inner { max-width: 720px; }
+  .hs, .rc { max-width: 760px; margin: 0 auto; }
+  .hs { padding-left: 28px; padding-right: 28px; }
+
+  /* form tetap satu kolom yang nyaman dibaca */
+  .dash-inner.uf { max-width: 560px; }
+  .dash-inner.rp { max-width: 640px; }
+}
+
+/* ========== Desktop (≥ 1100px) ========== */
+@media (min-width: 1100px) {
+  .dash { padding-top: 48px; }
+  .dash-inner { max-width: 1040px; }
+  .hs, .rc { max-width: 1040px; }
+
+  /* daftar jadi dua kolom */
+  .checks,
+  .hours .hour-group .checks,
+  .hs-list { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 24px; }
+  .us-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 32px; }
+  .rc-rows { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hours { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 24px; align-items: start; }
+
+  /* KPI Super Admin memanjang satu baris */
+  .sa-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+  /* form tetap sempit dan di tengah */
+  .dash-inner.uf { max-width: 560px; }
+  .dash-inner.rp { max-width: 720px; }
+}
+
+/* Tombol aksi dashboard QC: berdampingan di layar lebar */
+@media (min-width: 768px) {
+  .btn-primary, .btn-outline {
+    display: inline-block;
+    width: calc(50% - 8px);
+    margin-top: 20px;
+    vertical-align: top;
+  }
+  .btn-outline { margin-left: 16px; }
+}

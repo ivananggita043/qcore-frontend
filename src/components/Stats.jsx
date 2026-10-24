@@ -390,6 +390,7 @@ export default function Stats({ isSuper, section = "sewing", onBack }) {
 
   const secs = isSuper ? (scope === "all" ? ALL : [scope]) : [section];
   const key = secs.join();
+  const byBuyer = secs.length === 1 && (secs[0] === "washing" || secs[0] === "finishing");
   const prevEnd = toISO(addDays(TODAY_D, -days));
 
   const trend = useMemo(() => statsTrend(secs, TODAY, days), [key, days]);
@@ -633,6 +634,9 @@ export default function Stats({ isSuper, section = "sewing", onBack }) {
           </section>
 
           {/* 4. perbandingan */}
+          {byBuyer ? (
+            <StatsBuyerStyle section={secs[0]} days={days} endISO={TODAY} />
+          ) : (
           <section className="card st-card">
             <h2>
               {lines.rows[0]
@@ -663,6 +667,7 @@ export default function Stats({ isSuper, section = "sewing", onBack }) {
               ))}
             </ul>
           </section>
+          )}
 
           {/* 5. volume */}
           <section className="card st-card wide">
@@ -676,10 +681,7 @@ export default function Stats({ isSuper, section = "sewing", onBack }) {
               ariaLabel="Volume inspections per day"
             />
           </section>
-        </div>
-        {(scope === "washing" || scope === "finishing") && (
-          <StatsBuyerStyle section={scope} days={days} endISO={TODAY} />
-        )}
+        </div> 
       </div>
     </main>
   );
