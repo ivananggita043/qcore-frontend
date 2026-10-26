@@ -22,9 +22,9 @@ const emptyProcess = () => ({ styles: [emptyStyle()] });
 const styleStatus = (s) => {
   const insp = Number(s.inspect) || 0;
   const def = Number(s.defect) || 0;
-  if (def > 0 || s.defectTypes.length > 0) return "defect";
+  if (def > 0) return "defect";
   if (insp > 0) return "ok";
-  return s.operator.trim() !== "" || s.defect !== "" ? "started" : "pending";
+  return s.operator.trim() !== "" || s.defect !== "" || s.defectTypes.length > 0 ? "started" : "pending";
 };
 
 const percent = (s) => {
@@ -164,7 +164,8 @@ export default function CuttingCheck({ onBack, onFinish, lineIds = [] }) {
       if (!Number(s.inspect)) return setError(`${tag}: QTY INSP is required.`);
       if (s.defect === "") return setError(`${tag}: QTY DEFF is required (enter 0 if there is none).`);
       if (Number(s.defect) > Number(s.inspect)) return setError(`${tag}: QTY DEFF is greater than QTY INSP.`);
-      if (s.defectTypes.length !== 1) return setError(`${tag}: select one defect type.`);
+      if (Number(s.defect) > 0 && s.defectTypes.length !== 1)
+        return setError(`${tag}: select one defect type.`);
       if (!s.operator.trim()) return setError(`${tag}: operator name is required.`);
     }
 
@@ -187,7 +188,7 @@ export default function CuttingCheck({ onBack, onFinish, lineIds = [] }) {
           operatorName: s.operator.trim(),
           quantityInspect: Number(s.inspect),
           quantityDefect: Number(s.defect),
-          defectTypeId: s.defectTypes[0],
+          defectTypeId: Number(s.defect) > 0 ? s.defectTypes[0] : null,
         })),
       });
 
@@ -300,7 +301,11 @@ export default function CuttingCheck({ onBack, onFinish, lineIds = [] }) {
                 <div className="cc-block">
                   <p className="cc-cap">
                     Detail Defect
-                    <small>{s.defectTypes.length > 0 ? "1 selected" : "select one"}</small>
+                    <small>
+                      {Number(s.defect) > 0
+                        ? s.defectTypes.length > 0 ? "1 selected" : "select one"
+                        : "only if there are defects"}
+                    </small>
                   </p>
                   {typesError && <p className="cc-warn">{typesError}</p>}
                   <div className="cc-defects" role="group" aria-label="Detail defect">

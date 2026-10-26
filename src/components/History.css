@@ -249,3 +249,11 @@
   border-radius: 10px; background: #fff; font: inherit; font-size: 17px; color: #262323;
 }
 .hs-field select { height: 50px; padding: 0 14px; }
+.hs-badge.buyer {
+  max-width: 50vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: #e5e5e5;
+  color: #3748a1;
+}

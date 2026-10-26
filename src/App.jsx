@@ -112,7 +112,7 @@ function buildCuttingResult(data) {
     submittedAt: new Date().toISOString(),
     rows: [
       ["Section", "Cutting"],
-      ["Processes submitted", String(data.processes.length)],
+      ["Process", data.processes.map((p) => p.process).join(", ")],
       ["Styles", String(styles.length)],
       ["Total QTY INSP", String(totalInsp)],
       ["Total QTY DEFF", String(totalDef)],

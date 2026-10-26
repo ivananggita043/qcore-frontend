@@ -68,7 +68,7 @@ export function cuttingUserDay(list, iso) {
   const checks = rows.map((x) => {
     const items = x.items ?? [];
     const q = items.reduce((s, i) => s + (i.quantityInspect || 0), 0);
-        const d = items.reduce((s, i) => s + (i.quantityDefect || 0), 0);
+    const d = items.reduce((s, i) => s + (i.quantityDefect || 0), 0);
     qty += q;
     defect += d;
     const t = new Date(x.createdAt);
@@ -79,6 +79,9 @@ export function cuttingUserDay(list, iso) {
       style: items[0]?.styleCode ?? "-",
       qty: q,
       process: PROCESS_LABEL[x.processCheck] ?? x.processCheck,
+      buyer: items[0]
+        ? `${items[0].buyerName}${items.length > 1 ? ` +${items.length - 1}` : ""}`
+        : "-",
     };
   });
 

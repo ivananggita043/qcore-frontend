@@ -6,7 +6,7 @@ import {
   hourLabel,
   hourSlots,
 } from "../config/sections.js";
-import { userDay } from "../mock/dashboardData.js";
+import { userDay, buyerOfStyle } from "../mock/dashboardData.js";
 import "./DashboardUser.css";
 import { useCuttingInspections, cuttingUserDay } from "../api/cutting.js";
 
@@ -297,13 +297,13 @@ function CheckCard({ c, date }) {
   return (
     <li className="card check">
       <span className="check-id">{c.id}</span>
-      <span className={`badge ${c.status.toLowerCase()}`}>{c.status}</span>
+      <span className="check-buyer">{c.buyer ?? buyerOfStyle(c.style)}</span>
       <span className="check-meta">
         {shortDate(date)} - {c.time}
+        {c.process ? ` - ${c.process}` : ""}
       </span>
-      <span className="check-meta">
+      <span className="check-meta r">
         {c.style} - {c.qty} pcs
-        {c.process && <span className="check-meta">{c.process}</span>}
       </span>
     </li>
   );

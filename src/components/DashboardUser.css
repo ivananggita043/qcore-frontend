@@ -335,3 +335,17 @@
 .hour-head small { font-size: 13px; }
 .check { min-height: 76px; font-size: 15px; }
 .badge { font-size: 14px; }
+
+.check-buyer {
+  justify-self: end;
+  max-width: 60vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--indigo);
+}
+
+.check-meta.r { justify-self: end; text-align: right; }
+.check-meta { min-width: 0; overflow-wrap: anywhere; }

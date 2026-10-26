@@ -275,12 +275,10 @@ export default function History({ user, section = "sewing", onBack }) {
                 <span className="hs-id">{c.id}</span>
                 <span className="hs-badges">
                   {c.edited && <span className="hs-badge edited">Edited</span>}
-                  <span className={`hs-badge ${String(c.status).toLowerCase() === "pass" ? "pass" : "other"}`}>
-                    {c.status}
-                  </span>
+                  <span className="hs-badge buyer">{c.buyer}</span>
                 </span>
                 <span className="hs-meta">{c.label} - {c.time}</span>
-                <span className="hs-meta r">{c.buyer} / {c.style} - {c.qty} pcs</span>
+                <span className="hs-meta r">{c.style} - {c.qty} pcs</span>
                 <button type="button" className="hs-edit" onClick={() => setEditing(c)}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
