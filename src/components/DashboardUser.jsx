@@ -9,15 +9,36 @@ import {
 import { userDay, buyerOfStyle } from "../mock/dashboardData.js";
 import "./DashboardUser.css";
 import { useCuttingInspections, cuttingUserDay } from "../api/cutting.js";
+import { useInspections, inspectionUserDay } from "../api/inspections.js";
 
 /* ---------- helper tanggal ---------- */
 const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 const SHORT = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sept", "Oct", "Nov", "Dec",
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sept",
+  "Oct",
+  "Nov",
+  "Dec",
 ];
 const pad = (n) => String(n).padStart(2, "0");
 const toISO = (d) =>
@@ -56,14 +77,18 @@ export default function DashboardUser({
   const dateRef = useRef(null);
 
   const isCutting = user.section === "cutting";
+  const isLive = user.section === "sewing"; // tambah section lain nanti
   const live = useCuttingInspections(isCutting);
+  const liveInsp = useInspections(user.section, isLive);
 
   const { summary, checks } = useMemo(
     () =>
       isCutting
         ? cuttingUserDay(live.list, date)
-        : userDay(user.section ?? "sewing", date),
-    [isCutting, live.list, user.section, date]
+        : isLive
+          ? inspectionUserDay(liveInsp.list, user.section, date)
+          : userDay(user.section ?? "sewing", date),
+    [isCutting, isLive, live.list, liveInsp.list, user.section, date],
   );
   const hourly = SECTIONS[user.section]?.frequency === "hourly";
 
@@ -154,7 +179,10 @@ export default function DashboardUser({
             <Stat value={summary.inspections} label="inspections" />
             <Stat value={summary.defect} label="defect" red />
             <Stat value={`${summary.defectPct}%`} label="% defect" red />
-            <Stat value={summary.qty} label={isCutting ? "QTY Inspect" : "QTY Transfer"} />
+            <Stat
+              value={summary.qty}
+              label={isCutting ? "QTY Inspect" : "QTY Transfer"}
+            />
           </div>
         </section>
 
@@ -170,8 +198,14 @@ export default function DashboardUser({
           {hourly ? "Checks per Hour" : "Recent Check"}
         </h2>
 
-        {isCutting && live.loading && <p className="empty">Loading…</p>}
-        {isCutting && live.error && <p className="empty" role="alert">{live.error}</p>}
+        {(isCutting ? live : isLive ? liveInsp : null)?.loading && (
+          <p className="empty">Loading…</p>
+        )}
+        {(isCutting ? live : isLive ? liveInsp : null)?.error && (
+          <p className="empty" role="alert">
+            {(isCutting ? live : liveInsp).error}
+          </p>
+        )}
 
         {hourly ? (
           slots.length === 0 ? (

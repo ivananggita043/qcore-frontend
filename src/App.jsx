@@ -22,6 +22,7 @@ import Records from "./components/Records.jsx";
 import Stats from "./components/Stats.jsx";
 import FinalCheck from "./components/FinalCheck.jsx";
 import CuttingHistory from "./components/CuttingHistory.jsx";
+import { createInspection } from "./api/inspections.js";
 
 const PROTECTED = [
   "dashboard",
@@ -88,9 +89,12 @@ function buildStandardResult(section, label, data) {
       ["Section", label],
       ["Buyer / Style", `${data.buyer} / ${data.style}`],
       ["Color", data.color],
-      ["Line", data.line],
+      ...(data.line ? [["Line", data.line]] : []),
       ...(data.hour != null ? [["Jam", hourLabel(data.hour)]] : []),
       ["QTY INSP", String(data.inspect)],
+      ...(section === "sewing"
+        ? [["QTY Transfer", String(data.transfer)]]
+        : []),
       ["Total defect", String(total)],
     ],
     lines: data.defects.map(
@@ -362,7 +366,7 @@ export default function App() {
       );
     }
 
-      if (current === "cutting") {
+    if (current === "cutting") {
       return (
         <CuttingCheck
           onBack={() => setScreen("dashboard")}
@@ -382,10 +386,12 @@ export default function App() {
           section={section}
           sectionLabel={cfg.label}
           onBack={() => setScreen("newcheck")}
-          onSubmit={(data) => {
-            // TODO: kirim ke POST /inspections (waktu submit dicatat server)
-            console.log("submit QC:", { section, date: todayISO(), ...data });
-            setResult(buildStandardResult(section, cfg.label, data));
+          onSubmit={async (data) => {
+            const saved = await createInspection(section, data); // error ditangkap QcStandard
+            setResult({
+              ...buildStandardResult(section, cfg.label, data),
+              id: `#${PREFIX[section]}${String(saved.id).slice(0, 5).toUpperCase()}`,
+            });
             setJob(null);
             setScreen("success");
           }}
@@ -397,6 +403,8 @@ export default function App() {
       return (
         <NewQcCheck
           hourly={cfg.frequency === "hourly"}
+          withTransfer={section === "sewing"}
+          lineIds={su?.lineIds ?? []}
           onBack={() => setScreen("dashboard")}
           onStart={(data) => {
             setJob(data);

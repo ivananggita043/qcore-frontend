@@ -4,15 +4,12 @@ import { hourLabel, hourSlots } from "../config/sections.js";
 import "./NewQcCheck.css";
 
 const FIELDS = [
-  { name: "buyer",   label: "Buyer",   placeholder: "e.g. VS" },
-  { name: "style",   label: "Style",   placeholder: "Enter style" },
-  { name: "color",   label: "Color",   placeholder: "Enter color" },
+  { name: "buyer", label: "Buyer", placeholder: "e.g. VS" },
+  { name: "style", label: "Style", placeholder: "Enter style" },
+  { name: "color", label: "Color", placeholder: "Enter color" },
   { name: "inspect", label: "Inspect", placeholder: "Quantity to inspect", numeric: true },
-  { name: "line",    label: "Line",    placeholder: "e.g. 3 or 3A" },
 ];
 
-// Jam yang boleh dipilih: dari awal jam kerja sampai jam sekarang
-// (jam yang belum tiba tidak bisa dipilih). Urutan: terbaru di atas.
 function allowedHours() {
   const slots = hourSlots();
   const now = new Date().getHours();
@@ -20,27 +17,47 @@ function allowedHours() {
   return slots.filter((h) => h <= max).reverse();
 }
 
-export default function NewQcCheck({ hourly = false, onBack, onStart }) {
+export default function NewQcCheck({
+  hourly = false,
+  withTransfer = false, // true untuk sewing
+  lineIds = [], // dari session.user.lineIds
+  onBack,
+  onStart,
+}) {
   const [hours] = useState(allowedHours);
   const [hour, setHour] = useState(String(hours[0]));
+  const [lineId, setLineId] = useState(lineIds[0] ?? "");
+  const [error, setError] = useState("");
   const [values, setValues] = useState({
-    buyer: "", style: "", color: "", inspect: "", line: "",
+    buyer: "", style: "", color: "", inspect: "", transfer: "",
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const field = FIELDS.find((f) => f.name === name);
-    const clean = field?.numeric ? value.replace(/\D/g, "") : value;
-    setValues((v) => ({ ...v, [name]: clean }));
+    const numeric = name === "inspect" || name === "transfer";
+    setValues((v) => ({ ...v, [name]: numeric ? value.replace(/\D/g, "") : value }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!lineId) return setError("This account has no line assigned. Please contact your admin.");
+    const inspect = Number(values.inspect);
+    const transfer = Number(values.transfer);
+    if (inspect < 1) return setError("Inspect must be at least 1.");
+    if (withTransfer && transfer > inspect)
+      return setError("Transfer cannot be more than Inspect.");
+    setError("");
+
+    const idx = lineIds.indexOf(lineId);
     onStart?.({
-      ...values,
-      inspect: Number(values.inspect),
-      line: values.line.trim(),
-      hour: hourly ? Number(hour) : null, // jam yang dipilih (null untuk section harian)
+      buyer: values.buyer.trim(),
+      style: values.style.trim(),
+      color: values.color.trim(),
+      inspect,
+      transfer: withTransfer ? transfer : 0,
+      lineId,
+      line: lineIds.length > 1 ? String(idx + 1) : "", // kosong = tidak ditampilkan
+      hour: hourly ? Number(hour) : null,
     });
   };
 
@@ -59,6 +76,8 @@ export default function NewQcCheck({ hourly = false, onBack, onStart }) {
       </header>
 
       <form className="newqc-form" onSubmit={handleSubmit}>
+        {error && <p role="alert" style={{ color: "#c62828", fontSize: 16, fontWeight: 600 }}>{error}</p>}
+
         {hourly && (
           <label className="nq-field">
             <span className="nq-label">Hours</span>
@@ -71,6 +90,17 @@ export default function NewQcCheck({ hourly = false, onBack, onStart }) {
           </label>
         )}
 
+        {lineIds.length > 1 && (
+          <label className="nq-field">
+            <span className="nq-label">Line</span>
+            <select value={lineId} onChange={(e) => setLineId(e.target.value)}>
+              {lineIds.map((id, i) => (
+                <option key={id} value={id}>Line {i + 1}</option>
+              ))}
+            </select>
+          </label>
+        )}
+
         {FIELDS.map((f) => (
           <label key={f.name} className="nq-field">
             <span className="nq-label">{f.label}</span>
@@ -78,7 +108,6 @@ export default function NewQcCheck({ hourly = false, onBack, onStart }) {
               name={f.name}
               type="text"
               inputMode={f.numeric ? "numeric" : "text"}
-              pattern={f.numeric ? "[0-9]+" : undefined}
               placeholder={f.placeholder}
               value={values[f.name]}
               onChange={handleChange}
@@ -87,6 +116,22 @@ export default function NewQcCheck({ hourly = false, onBack, onStart }) {
             />
           </label>
         ))}
+
+        {withTransfer && (
+          <label className="nq-field">
+            <span className="nq-label">Transfer</span>
+            <input
+              name="transfer"
+              type="text"
+              inputMode="numeric"
+              placeholder="Quantity to transfer"
+              value={values.transfer}
+              onChange={handleChange}
+              autoComplete="off"
+              required
+            />
+          </label>
+        )}
 
         <button type="submit" className="nq-submit">Start QC Check</button>
       </form>

@@ -21,8 +21,14 @@ function SearchBox({ value, onChange, placeholder }) {
         aria-label={placeholder}
       />
       {value && (
-        <button type="button" className="qs-clear" aria-label="Delete search"
-                onClick={() => onChange("")}>×</button>
+        <button
+          type="button"
+          className="qs-clear"
+          aria-label="Delete search"
+          onClick={() => onChange("")}
+        >
+          ×
+        </button>
       )}
     </div>
   );
@@ -43,6 +49,8 @@ export default function QcStandard({
   // key -> { category, area, type, count }
   const [counts, setCounts] = useState({});
   const typesRef = useRef(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
 
   const cat = categories.find((c) => c.key === catKey) ?? categories[0];
   const isAreaType = cat.kind === "areaType";
@@ -53,7 +61,9 @@ export default function QcStandard({
   const entries = Object.entries(counts);
   const total = entries.reduce((s, [, e]) => s + e.count, 0);
   const catTotal = (c) =>
-    entries.filter(([, e]) => e.category === c.label).reduce((s, [, e]) => s + e.count, 0);
+    entries
+      .filter(([, e]) => e.category === c.label)
+      .reduce((s, [, e]) => s + e.count, 0);
   const areaTotal = (a) =>
     entries
       .filter(([, e]) => e.category === cat.label && e.area === a)
@@ -62,7 +72,8 @@ export default function QcStandard({
 
   // setelah area dipilih, geser layar ke daftar defect type
   useEffect(() => {
-    if (area) typesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (area)
+      typesRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [area]);
 
   const change = (a, type, delta) =>
@@ -89,13 +100,27 @@ export default function QcStandard({
     setTypeQuery("");
   };
 
-  const handleSubmit = () =>
-    onSubmit?.({
-      ...job,
-      defects: Object.values(counts).map(({ category, area: a, type, count }) => ({
-        category, area: a, type, count,
-      })),
-    });
+  const handleSubmit = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      await onSubmit?.({
+        ...job,
+        defects: Object.values(counts).map(
+          ({ category, area: a, type, count }) => ({
+            category,
+            area: a,
+            type,
+            count,
+          }),
+        ),
+      });
+    } catch (e) {
+      setError(e?.message || "Failed to submit. Please try again.");
+      setBusy(false);
+    }
+  };
 
   const renderTypes = (forArea) =>
     types.length === 0 ? (
@@ -108,11 +133,22 @@ export default function QcStandard({
             <li key={t} className={`qs-item ${n > 0 ? "has" : ""}`}>
               <span className="qs-area">{t}</span>
               <div className="qs-step">
-                <button type="button" aria-label={`Kurangi ${t}`} disabled={n === 0}
-                        onClick={() => change(forArea, t, -1)}>−</button>
+                <button
+                  type="button"
+                  aria-label={`Kurangi ${t}`}
+                  disabled={n === 0}
+                  onClick={() => change(forArea, t, -1)}
+                >
+                  −
+                </button>
                 <output aria-live="polite">{n}</output>
-                <button type="button" aria-label={`Tambah ${t}`}
-                        onClick={() => change(forArea, t, 1)}>+</button>
+                <button
+                  type="button"
+                  aria-label={`Tambah ${t}`}
+                  onClick={() => change(forArea, t, 1)}
+                >
+                  +
+                </button>
               </div>
             </li>
           );
@@ -125,10 +161,26 @@ export default function QcStandard({
       <StatusBar />
 
       <header className="qs-head">
-        <button type="button" className="qs-back" aria-label="Back" onClick={onBack}>
-          <svg width="12" height="20" viewBox="0 0 12 20" fill="none" aria-hidden="true">
-            <path d="M10 2 2 10l8 8" stroke="currentColor" strokeWidth="1.6"
-                  strokeLinecap="round" strokeLinejoin="round" />
+        <button
+          type="button"
+          className="qs-back"
+          aria-label="Back"
+          onClick={onBack}
+        >
+          <svg
+            width="12"
+            height="20"
+            viewBox="0 0 12 20"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M10 2 2 10l8 8"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </button>
         <h1 className="qs-title">New QC Check {sectionLabel}</h1>
@@ -140,9 +192,11 @@ export default function QcStandard({
           <span className="o">{job.style}</span>{" "}
           <span className="b">{job.color} .</span>{" "}
           <span className="o">{job.inspect} PCS</span>{" "}
-          <span className="b">LN {lineLabel(job.line)}</span>
+          {job.line && (<> <span className="b">LN {lineLabel(job.line)}</span></>)}
         </p>
-        {job.hour != null && <p className="qs-hour">Jam {hourLabel(job.hour)}</p>}
+        {job.hour != null && (
+          <p className="qs-hour">Jam {hourLabel(job.hour)}</p>
+        )}
 
         {/* Kategori (turun ke baris berikutnya, tanpa geser samping) */}
         <div className="qs-tabs" role="group" aria-label="Kategori">
@@ -169,15 +223,25 @@ export default function QcStandard({
             {area ? (
               <div className="qs-picked-bar">
                 <span>{area}</span>
-                <button type="button" onClick={() => setArea(null)}>Ganti area</button>
+                <button type="button" onClick={() => setArea(null)}>
+                  Ganti area
+                </button>
               </div>
             ) : (
               <>
-                <SearchBox value={areaQuery} onChange={setAreaQuery} placeholder="Cari defect area…" />
+                <SearchBox
+                  value={areaQuery}
+                  onChange={setAreaQuery}
+                  placeholder="Cari defect area…"
+                />
                 {areas.length === 0 ? (
                   <p className="qs-empty">No defect areas found.</p>
                 ) : (
-                  <div className="qs-areas" role="group" aria-label="Defect area">
+                  <div
+                    className="qs-areas"
+                    role="group"
+                    aria-label="Defect area"
+                  >
                     {areas.map((a) => {
                       const n = areaTotal(a);
                       return (
@@ -185,7 +249,10 @@ export default function QcStandard({
                           key={a}
                           type="button"
                           className={`qs-area-chip ${n > 0 ? "has" : ""}`}
-                          onClick={() => { setArea(a); setAreaQuery(""); }}
+                          onClick={() => {
+                            setArea(a);
+                            setAreaQuery("");
+                          }}
                         >
                           <span>{a}</span>
                           {n > 0 && <em>{n}</em>}
@@ -197,11 +264,17 @@ export default function QcStandard({
               </>
             )}
 
-            <p className="qs-sub" ref={typesRef}>2. Hitung Defect Type</p>
+            <p className="qs-sub" ref={typesRef}>
+              2. Hitung Defect Type
+            </p>
             {area ? (
               <>
                 {showTypeSearch && (
-                  <SearchBox value={typeQuery} onChange={setTypeQuery} placeholder="Cari defect type…" />
+                  <SearchBox
+                    value={typeQuery}
+                    onChange={setTypeQuery}
+                    placeholder="Cari defect type…"
+                  />
                 )}
                 {renderTypes(area)}
               </>
@@ -213,7 +286,11 @@ export default function QcStandard({
           <>
             <p className="qs-sub">Count Defect Types</p>
             {showTypeSearch && (
-              <SearchBox value={typeQuery} onChange={setTypeQuery} placeholder="Find defect type…" />
+              <SearchBox
+                value={typeQuery}
+                onChange={setTypeQuery}
+                placeholder="Find defect type…"
+              />
             )}
             {renderTypes(null)}
           </>
@@ -231,7 +308,13 @@ export default function QcStandard({
                     {e.area ? ` · ${e.area}` : ""} · {e.type}
                   </span>
                   <strong>×{e.count}</strong>
-                  <button type="button" aria-label="Delete" onClick={() => removeEntry(key)}>×</button>
+                  <button
+                    type="button"
+                    aria-label="Delete"
+                    onClick={() => removeEntry(key)}
+                  >
+                    ×
+                  </button>
                 </li>
               ))}
             </ul>
@@ -240,8 +323,29 @@ export default function QcStandard({
       </div>
 
       <footer className="qs-foot">
-        <button type="button" className="qs-submit" onClick={handleSubmit}>
-          Submit{total > 0 ? ` (${total} defect)` : ""}
+        {error && (
+          <p
+            role="alert"
+            style={{
+              color: "#c62828",
+              fontWeight: 600,
+              fontSize: 16,
+              margin: "0 auto 8px",
+              maxWidth: 420,
+            }}
+          >
+            {error}
+          </p>
+        )}
+        <button
+          type="button"
+          className="qs-submit"
+          disabled={busy}
+          onClick={handleSubmit}
+        >
+          {busy
+            ? "Submitting…"
+            : `Submit${total > 0 ? ` (${total} defect)` : ""}`}
         </button>
       </footer>
     </main>
