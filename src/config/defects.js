@@ -27,7 +27,7 @@ export const TYPE_ONLY = {
     "SLUB", "MISSING YARN", "KNOT", "FOREIGN YARN", "DOT STAIN", "THICK PICKED",
     "LINE MARK", "HEAVY CREASE", "WHITE SPOT", "MISS PRINT",
   ],
-  OTHERS: ["YARNPULL", "HOLE", "SHADING", "SIZE SPEC (+, -, WRONG SIZE)", "OTHER"],
+  OTHERS: ["YARNPULL", "HOLE", "SHADING", "SIZE SPEC (+,- WRONG SIZE)", "OTHER"],
 };
 
 // Tab tambahan khusus section tertentu

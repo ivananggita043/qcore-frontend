@@ -32,12 +32,12 @@ const localISO = (d) =>
 /* ---------- daftar defect type dari database (diambil sekali) ---------- */
 let defectCache = null;
 const loadDefectTypes = () =>
-  (defectCache ??= apiFetch(`${BASE}/defects/search`)
-    .then((d) => (Array.isArray(d) ? d : []))
-    .catch((e) => {
-      defectCache = null; // coba lagi pada submit berikutnya
-      throw e;
-    }));
+(defectCache ??= apiFetch(`${BASE}/defects/search`)
+  .then((d) => (Array.isArray(d) ? d : []))
+  .catch((e) => {
+    defectCache = null; // coba lagi pada submit berikutnya
+    throw e;
+  }));
 
 // { category, area, type, count } dari form -> { defectTypeId, quantity }
 async function resolveDefects(section, defects) {
@@ -95,6 +95,9 @@ export async function createInspection(section, job) {
       transferQuantity: transfer,
       inspectionTimeSlot: job.hour != null ? hourLabel(job.hour) : undefined,
       defects,
+      handfeel: job.handfeel,
+      grade: job.grade,
+      washingType: job.washingType,
     },
   });
 }
@@ -149,6 +152,7 @@ export function inspectionUserDay(list, section, iso) {
       style: x.styleCode,
       buyer: x.buyerName,
       qty: x.inspectQuantity,
+      process: x.washingType ? x.washingType[0] + x.washingType.slice(1).toLowerCase() : undefined,
     };
   });
 

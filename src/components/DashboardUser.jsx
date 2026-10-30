@@ -77,7 +77,7 @@ export default function DashboardUser({
   const dateRef = useRef(null);
 
   const isCutting = user.section === "cutting";
-  const isLive = user.section === "sewing"; // tambah section lain nanti
+  const isLive = ["sewing", "washing"].includes(user.section); // tambah section lain nanti
   const live = useCuttingInspections(isCutting);
   const liveInsp = useInspections(user.section, isLive);
 

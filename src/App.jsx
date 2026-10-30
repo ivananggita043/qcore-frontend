@@ -23,6 +23,7 @@ import Stats from "./components/Stats.jsx";
 import FinalCheck from "./components/FinalCheck.jsx";
 import CuttingHistory from "./components/CuttingHistory.jsx";
 import { createInspection } from "./api/inspections.js";
+import WashingType from "./components/WashingType.jsx";
 
 const PROTECTED = [
   "dashboard",
@@ -38,7 +39,9 @@ const PROTECTED = [
   "history",
   "records",
   "stats",
+  "washingtype",
 ];
+
 const ROLE_LABEL = {
   user: "QC Line",
   admin: "Admin",
@@ -89,6 +92,12 @@ function buildStandardResult(section, label, data) {
       ["Section", label],
       ["Buyer / Style", `${data.buyer} / ${data.style}`],
       ["Color", data.color],
+      ...(data.washingType
+        ? [
+            ["Type", data.washingType === "BULK" ? "Bulk" : "Repair"],
+            ["Handfeel / Grade", `${data.handfeel} / ${data.grade}`],
+          ]
+        : []),
       ...(data.line ? [["Line", data.line]] : []),
       ...(data.hour != null ? [["Jam", hourLabel(data.hour)]] : []),
       ["QTY INSP", String(data.inspect)],
@@ -156,6 +165,7 @@ export default function App() {
   const [session, setSession] = useState(loadSession); // dari sessionStorage (jika masih berlaku)
   const [notice, setNotice] = useState("");
   const [job, setJob] = useState(null); // data dari form New QC Check
+  const [washingType, setWashingType] = useState(null);
   const [result, setResult] = useState(null); // hasil submit untuk halaman sukses
   const [devSection, setDevSection] = useState(() =>
     fromQuery("section", Object.keys(SECTIONS)),
@@ -229,7 +239,7 @@ export default function App() {
   // keluar dari layar pemeriksaan yang sedang terbuka saat role/section DEV diganti
   const leaveCheckScreens = () => {
     if (
-      ["cutting", "final", "newcheck", "qcsewing", "success"].includes(screen)
+      ["cutting", "final", "newcheck", "washingtype", "qcsewing", "success"].includes(screen)
     ) {
       setJob(null);
       setResult(null);
@@ -399,15 +409,30 @@ export default function App() {
       );
     }
 
+    if (current === "washingtype") {
+      return (
+        <WashingType
+          onBack={() => setScreen("dashboard")}
+          onPick={(t) => {
+            setWashingType(t);
+            setScreen("newcheck");
+          }}
+        />
+      );
+    }
+
     if (current === "newcheck") {
       return (
         <NewQcCheck
           hourly={cfg.frequency === "hourly"}
           withTransfer={section === "sewing"}
+          withWashing={section === "washing"}
           lineIds={su?.lineIds ?? []}
-          onBack={() => setScreen("dashboard")}
+          onBack={() =>
+            setScreen(section === "washing" ? "washingtype" : "dashboard")
+          }
           onStart={(data) => {
-            setJob(data);
+            setJob(section === "washing" ? { ...data, washingType } : data);
             setScreen("qcsewing");
           }}
         />
@@ -447,8 +472,8 @@ export default function App() {
             setScreen(
               cfg.flow === "cutting"
                 ? "cutting"
-                : cfg.flow === "final"
-                  ? "final"
+                : section === "washing"
+                  ? "washingtype"
                   : "newcheck",
             )
           }
@@ -478,6 +503,8 @@ export default function App() {
       />
     );
   };
+
+  console.log("section:", section, "withWashing:", section === "washing");
 
   return (
     <>

@@ -86,6 +86,17 @@ export default function QcStandard({
       return copy;
     });
 
+  // isi jumlah langsung dengan angka
+  const setCount = (a, type, raw) =>
+    setCounts((prev) => {
+      const key = keyOf(cat, a, type);
+      const n = Math.min(9999, Number(String(raw).replace(/\D/g, "")) || 0);
+      const copy = { ...prev };
+      if (n === 0) delete copy[key];
+      else copy[key] = { category: cat.label, area: a, type, count: n };
+      return copy;
+    });
+
   const removeEntry = (key) =>
     setCounts((prev) => {
       const copy = { ...prev };
@@ -141,7 +152,17 @@ export default function QcStandard({
                 >
                   −
                 </button>
-                <output aria-live="polite">{n}</output>
+                <input
+                  className="qs-num"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  aria-label={`Jumlah ${t}`}
+                  value={n === 0 ? "" : n}
+                  placeholder="0"
+                  onFocus={(e) => e.target.select()}
+                  onChange={(e) => setCount(forArea, t, e.target.value)}
+                />
                 <button
                   type="button"
                   aria-label={`Tambah ${t}`}
@@ -192,10 +213,21 @@ export default function QcStandard({
           <span className="o">{job.style}</span>{" "}
           <span className="b">{job.color} .</span>{" "}
           <span className="o">{job.inspect} PCS</span>{" "}
-          {job.line && (<> <span className="b">LN {lineLabel(job.line)}</span></>)}
+          {job.line && (
+            <>
+              {" "}
+              <span className="b">LN {lineLabel(job.line)}</span>
+            </>
+          )}
         </p>
         {job.hour != null && (
           <p className="qs-hour">Jam {hourLabel(job.hour)}</p>
+        )}
+        {job.washingType && (
+          <p className="qs-hour">
+            {job.washingType === "BULK" ? "Bulk" : "Repair"} · Handfeel{" "}
+            {job.handfeel} · Grade {job.grade}
+          </p>
         )}
 
         {/* Kategori (turun ke baris berikutnya, tanpa geser samping) */}

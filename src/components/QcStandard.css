@@ -221,7 +221,20 @@
 .qs-step button:not(:disabled):hover { background: rgba(55, 72, 161, 0.1); }
 .qs-step button:not(:disabled):active { background: rgba(55, 72, 161, 0.2); }
 .qs-step button:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
-.qs-step output { min-width: 38px; text-align: center; font-weight: 600; font-size: 20px; color: #262323; }
+.qs-num {
+  width: 64px;
+  height: 46px;
+  padding: 0 4px;
+  border: 1.5px solid #c9ccd8;
+  border-radius: 10px;
+  background: #fff;
+  text-align: center;
+  font: inherit;
+  font-size: 20px;
+  font-weight: 600;
+  color: #262323;
+}
+.qs-num:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
 
 .qs-empty { margin: 16px 0; text-align: center; font-size: 15px; color: #666; }
 

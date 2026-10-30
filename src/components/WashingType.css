@@ -1,0 +1,11 @@
+.wt { display: grid; gap: 16px; padding: 24px 20px; max-width: 560px; margin: 0 auto; }
+.wt-sub { margin: 0; font-size: 18px; font-weight: 600; }
+.wt-card {
+  display: grid; gap: 6px; min-height: 110px; padding: 20px;
+  text-align: left; background: #fff; color: inherit;
+  border: 2px solid var(--indigo); border-radius: 16px; cursor: pointer;
+}
+.wt-card strong { font-size: 24px; color: var(--indigo); }
+.wt-card span { font-size: 16px; }
+.wt-card:active { background: #eef0ff; }
+.wt-card:focus-visible { outline: 3px solid var(--indigo); outline-offset: 3px; }
