@@ -187,7 +187,7 @@ export default function DashboardUser({
         </section>
 
         <button type="button" className="btn-primary" onClick={onNewCheck}>
-          + New QC Check
+          {user.section === "final" ? "+ New Inspect" : "+ New QC Check"}
         </button>
         <button type="button" className="btn-outline" onClick={onHistory}>
           History
