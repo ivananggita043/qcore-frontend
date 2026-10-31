@@ -24,6 +24,7 @@ import FinalCheck from "./components/FinalCheck.jsx";
 import CuttingHistory from "./components/CuttingHistory.jsx";
 import { createInspection } from "./api/inspections.js";
 import WashingType from "./components/WashingType.jsx";
+import InspectionHistory from "./components/InspectionHistory.jsx";
 
 const PROTECTED = [
   "dashboard",
@@ -164,6 +165,9 @@ function buildFinalResult(data) {
     lines: data.reasons,
   };
 }
+
+// section yang History-nya sudah dari backend (tambahkan sewing/finishing/packing nanti)
+const LIVE_HISTORY = ["washing"];
 
 export default function App() {
   const [screen, setScreen] = useState("splash");
@@ -351,11 +355,17 @@ export default function App() {
     }
 
     if (current === "history") {
-      const Page = section === "cutting" ? CuttingHistory : History;
+      const Page =
+        section === "cutting"
+          ? CuttingHistory
+          : LIVE_HISTORY.includes(section)
+            ? InspectionHistory
+            : History;
       return (
         <Page
           user={user}
           section={section}
+          lineIds={su?.lineIds ?? []}
           onBack={() => setScreen("dashboard")}
         />
       );

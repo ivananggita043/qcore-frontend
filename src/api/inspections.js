@@ -11,7 +11,7 @@ export const SECTION_ENUM = {
   packing: "PACKING",
 };
 
-const PREFIX = { sewing: "SEW", washing: "WSH", finishing: "FIN", packing: "PCK" };
+export const PREFIX = { sewing: "SEW", washing: "WSH", finishing: "FIN", packing: "PCK" };
 
 // label kategori di form -> enum backend
 const CATEGORY_ENUM = {
@@ -31,11 +31,11 @@ const localISO = (d) =>
 
 /* ---------- daftar defect type dari database (diambil sekali) ---------- */
 let defectCache = null;
-const loadDefectTypes = () =>
+export const loadDefectTypes = () =>
 (defectCache ??= apiFetch(`${BASE}/defects/search`)
   .then((d) => (Array.isArray(d) ? d : []))
   .catch((e) => {
-    defectCache = null; // coba lagi pada submit berikutnya
+    defectCache = null;
     throw e;
   }));
 
@@ -56,6 +56,7 @@ async function resolveDefects(section, defects) {
       list.find((t) => t.section === sec) ?? list[0];
     const hit =
       pick(byName.filter((t) => t.category === cat && norm(t.areaName) === area)) ??
+      pick(byName.filter((t) => norm(t.areaName) === norm(d.category))) ??
       pick(byName.filter((t) => norm(t.areaName) === area)) ??
       pick(byName.filter((t) => t.category === cat));
 
@@ -103,6 +104,14 @@ export async function createInspection(section, job) {
     },
   });
 }
+
+export const fetchMyInspections = (section, signal) =>
+  apiFetch(`${BASE}/all?section=${SECTION_ENUM[section]}`, { signal }).then((d) =>
+    Array.isArray(d) ? d : []
+  );
+
+export const updateInspection = (id, body) =>
+  apiFetch(`${BASE}/${id}`, { method: "PUT", body });
 
 /* ---------- daftar milik user yang login ---------- */
 export function useInspections(section, enabled) {

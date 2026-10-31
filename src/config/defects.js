@@ -57,10 +57,31 @@ export const PACKING_TYPES = [
   "ACCESSORIES",
 ];
 
+// Section finishing punya kategori dan defect sendiri (tanpa area)
+export const FINISHING_CATEGORIES = [
+  {
+    label: "IRONING",
+    types: ["CREASEMARK", "PUCKERING", "POOR SHAPE", "SHINNY", "OTHER"],
+  },
+  {
+    label: "FOLDING",
+    types: ["WRONG H/T", "MISSING H/T", "POOR FOLDING", "UNBALANCE", "ACCESORIES", "POLYBAG"],
+  },
+  {
+    label: "HANDMADE",
+    types: ["BROKEN", "MISS PLACED", "INSECURE", "LOOSE TENSION", "OTHER"],
+  },
+];
+
 export function categoriesFor(section) {
   if (section === "packing") {
     return [{ key: "PACKING", label: "PACKING", kind: "type", types: PACKING_TYPES }];
   }
+  if (section === "finishing") {
+  return FINISHING_CATEGORIES.map((c) => ({
+    key: c.label, label: c.label, kind: "type", types: c.types,
+  }));
+}
   const list = [
     {
       key: "BACK TO LINE",
