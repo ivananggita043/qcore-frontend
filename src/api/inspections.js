@@ -98,6 +98,8 @@ export async function createInspection(section, job) {
       handfeel: job.handfeel,
       grade: job.grade,
       washingType: job.washingType,
+      process: job.process,
+      qtyCheckCartonToday: job.cartons,
     },
   });
 }
@@ -143,7 +145,9 @@ export function inspectionUserDay(list, section, iso) {
     const t = new Date(x.createdAt);
     insp += x.inspectQuantity || 0;
     defect += x.totalDefect || 0;
-    qty += section === "sewing" ? x.transferQuantity || 0 : x.inspectQuantity || 0;
+    qty += ["sewing", "finishing"].includes(section)
+      ? x.transferQuantity || 0
+      : x.inspectQuantity || 0;
     return {
       id: `${PREFIX[section]}-${String(x.id).slice(0, 4).toUpperCase()}`,
       hour: hourOfSlot(x.inspectionTimeSlot) ?? t.getHours(),
@@ -152,7 +156,13 @@ export function inspectionUserDay(list, section, iso) {
       style: x.styleCode,
       buyer: x.buyerName,
       qty: x.inspectQuantity,
-      process: x.washingType ? x.washingType[0] + x.washingType.slice(1).toLowerCase() : undefined,
+      process: x.washingType
+        ? x.washingType[0] + x.washingType.slice(1).toLowerCase()
+        : x.process === "WASH"
+          ? "Wash"
+          : x.process === "NON_WASH"
+            ? "Non-wash"
+            : undefined,
     };
   });
 

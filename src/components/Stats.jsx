@@ -10,6 +10,7 @@ import {
 import "./Stats.css";
 import { SECTIONS } from "../config/sections.js";
 import StatsBuyerStyle from "./StatsBuyerStyle.jsx";
+import StatsLineDefects from "./StatsLineDefects.jsx";
 
 const ALL = Object.keys(SECTIONS);
 const NAMES = Object.fromEntries(
@@ -390,7 +391,8 @@ export default function Stats({ isSuper, section = "sewing", onBack }) {
 
   const secs = isSuper ? (scope === "all" ? ALL : [scope]) : [section];
   const key = secs.join();
-  const byBuyer = secs.length === 1 && (secs[0] === "washing" || secs[0] === "finishing");
+  const byBuyer =
+    secs.length === 1 && (secs[0] === "washing" || secs[0] === "finishing");
   const prevEnd = toISO(addDays(TODAY_D, -days));
 
   const trend = useMemo(() => statsTrend(secs, TODAY, days), [key, days]);
@@ -637,36 +639,41 @@ export default function Stats({ isSuper, section = "sewing", onBack }) {
           {byBuyer ? (
             <StatsBuyerStyle section={secs[0]} days={days} endISO={TODAY} />
           ) : (
-          <section className="card st-card">
-            <h2>
-              {lines.rows[0]
-                ? `${lines.rows[0].name} has the highest defect rate (${pct(lines.rows[0].rate)})`
-                : "Comparison"}
-            </h2>
-            <p className="st-note">
-              {lines.kind === "section"
-                ? "Comparison between sections"
-                : "Comparison between lines"}
-              , sorted by the highest rate
-            </p>
-            <ul className="st-hbars">
-              {lines.rows.map((r) => (
-                <li key={r.name}>
-                  <div className="row">
-                    <span className="nm">{r.name}</span>
-                    <b>{pct(r.rate)}</b>
-                  </div>
-                  <div className="bar">
-                    <i
-                      style={{
-                        width: `${Math.max(3, (r.rate / maxLine) * 100)}%`,
-                      }}
-                    />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </section>
+            <section className="card st-card">
+              <h2>
+                {lines.rows[0]
+                  ? `${lines.rows[0].name} has the highest defect rate (${pct(lines.rows[0].rate)})`
+                  : "Comparison"}
+              </h2>
+              <p className="st-note">
+                {lines.kind === "section"
+                  ? "Comparison between sections"
+                  : "Comparison between lines"}
+                , sorted by the highest rate
+              </p>
+              <ul className="st-hbars">
+                {lines.rows.map((r) => (
+                  <li key={r.name}>
+                    <div className="row">
+                      <span className="nm">{r.name}</span>
+                      <b>{pct(r.rate)}</b>
+                    </div>
+                    <div className="bar">
+                      <i
+                        style={{
+                          width: `${Math.max(3, (r.rate / maxLine) * 100)}%`,
+                        }}
+                      />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {/* 4b. top 3 defect per line (khusus sewing) */}
+          {secs.length === 1 && secs[0] === "sewing" && (
+            <StatsLineDefects section="sewing" days={days} endISO={TODAY} />
           )}
 
           {/* 5. volume */}
@@ -681,7 +688,7 @@ export default function Stats({ isSuper, section = "sewing", onBack }) {
               ariaLabel="Volume inspections per day"
             />
           </section>
-        </div> 
+        </div>
       </div>
     </main>
   );

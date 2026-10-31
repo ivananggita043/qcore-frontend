@@ -11,7 +11,7 @@ export const BACK_TO_LINE = {
   types: [
     "BROKEN STITCH", "DIMPLE", "EXPOSED", "FULLNESS", "GAPING OPEN", "HIGH-LOW",
     "HIKING", "LOOSE STITCH", "MISS PLACED", "MISSING", "NEEDLE CHEW", "NEEDLE HOLE",
-    "NOT CENTER", "PLEATED", "POOR SHAPE", "PUCKERING" ,"PULLING OUT", "RAW EDGE",
+    "NOT CENTER", "PLEATED", "POOR SHAPE", "PUCKERING", "PULLING OUT", "RAW EDGE",
     "ROLLING OUT", "RUN OF STITCH", "SKIP STITCH", "SLANTED", "TWISTED",
     "UNBALANCE", "UNEVEN", "UNFULL STITCH", "UNKISSING", "UNMATCH",
     "UNREMOVED STITCH", "UNSTRAIGHT", "VISIBLE STITCH", "WRONG DIRECTION",
@@ -21,7 +21,7 @@ export const BACK_TO_LINE = {
 
 // Kategori yang hanya punya defect type (tanpa area)
 export const TYPE_ONLY = {
-  TRIMMING: ["UNCUT_THREAD", "FRAYING"],
+  TRIMMING: ["UNCUT THREAD", "FRAYING"],
   STAIN: ["LINGKUNGAN", "OIL STAIN", "STREAK MARK", "CHEMICAL STAIN"],
   "FABRIC DEF": [
     "SLUB", "MISSING YARN", "KNOT", "FOREIGN YARN", "DOT STAIN", "THICK PICK",
@@ -42,7 +42,25 @@ export const SECTION_EXTRA = {
   },
 };
 
+// Section packing punya daftar defect sendiri (satu kategori, tanpa area)
+export const PACKING_TYPES = [
+  "WRONG QTY",
+  "WRONG SIZE",
+  "WRONG GARMENT",
+  "POOR FOLDING",
+  "MISSING HANGTAG",
+  "WRONG STICKER P/B",
+  "MISSING STICKER P/B",
+  "DAMAGE POLYBAG",
+  "WRONG POLYBAG",
+  "HANGER",
+  "ACCESSORIES",
+];
+
 export function categoriesFor(section) {
+  if (section === "packing") {
+    return [{ key: "PACKING", label: "PACKING", kind: "type", types: PACKING_TYPES }];
+  }
   const list = [
     {
       key: "BACK TO LINE",

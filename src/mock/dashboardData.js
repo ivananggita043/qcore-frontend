@@ -499,3 +499,52 @@ export function statsBuyerStyle(section, endISO, days) {
 
   return { dates, section: pack(NAMES[section] ?? section, items), buyers, styles };
 }
+
+// Top defect per line (data tiruan). Dipakai kartu "Top 3 defects per line" di halaman Statistics.
+export function statsLineDefects(section, endISO, days) {
+  const key = SECTION_PROFILE[section] ? section : "sewing";
+  const n = SECTION_PROFILE[key].lines;
+  const types = DEFECTS[key];
+  const dates = isoList(endISO, days);
+
+  // tiap line punya kecenderungan defect sendiri (tetap, tidak berubah tiap render)
+  const bias = Array.from({ length: n }, (_, k) => 0.6 + rng(`${key}:line${k}:bias`)() * 0.9);
+  const weights = Array.from({ length: n }, (_, k) =>
+    types.map((_, t) => (types.length - t) * (0.5 + rng(`${key}:line${k}:type${t}`)() * 1.5))
+  );
+
+  const acc = Array.from({ length: n }, () => ({
+    inspections: 0,
+    defects: 0,
+    byType: types.map(() => 0),
+  }));
+
+  dates.forEach((iso) => {
+    const s = sectionStats(key, asDate(iso));
+    const baseRate = s.inspections ? s.defects / s.inspections : 0;
+    acc.forEach((a, k) => {
+      const r = rng(`${iso}:${key}:line${k}:ld`);
+      const insp = Math.round((s.inspections / n) * (0.85 + r() * 0.3));
+      const def = Math.min(insp, Math.round(insp * baseRate * bias[k] * (0.9 + r() * 0.2)));
+      const wSum = weights[k].reduce((x, y) => x + y, 0);
+      a.inspections += insp;
+      a.defects += def;
+      weights[k].forEach((w, t) => (a.byType[t] += (def * w) / wSum));
+    });
+  });
+
+  return acc
+    .map((a, k) => ({
+      name: `Line ${pad2(k + 1)}`,
+      inspections: a.inspections,
+      defects: a.defects,
+      rate: rateFrom(a.defects, a.inspections),
+      top: types
+        .map((name, t) => ({ name, count: Math.round(a.byType[t]) }))
+        .filter((d) => d.count > 0)
+        .sort((x, y) => y.count - x.count)
+        .slice(0, 3),
+    }))
+    .sort((x, y) => y.rate - x.rate);
+}
+

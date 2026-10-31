@@ -77,7 +77,9 @@ export default function DashboardUser({
   const dateRef = useRef(null);
 
   const isCutting = user.section === "cutting";
-  const isLive = ["sewing", "washing"].includes(user.section); // tambah section lain nanti
+  const isLive = ["sewing", "washing", "finishing", "packing"].includes(
+    user.section,
+  );
   const live = useCuttingInspections(isCutting);
   const liveInsp = useInspections(user.section, isLive);
 
@@ -181,7 +183,11 @@ export default function DashboardUser({
             <Stat value={`${summary.defectPct}%`} label="% defect" red />
             <Stat
               value={summary.qty}
-              label={isCutting ? "QTY Inspect" : "QTY Transfer"}
+              label={
+                ["sewing", "finishing"].includes(user.section)
+                  ? "QTY Transfer"
+                  : "QTY Inspect"
+              }
             />
           </div>
         </section>

@@ -100,9 +100,14 @@ function buildStandardResult(section, label, data) {
         : []),
       ...(data.line ? [["Line", data.line]] : []),
       ...(data.hour != null ? [["Jam", hourLabel(data.hour)]] : []),
-      ["QTY INSP", String(data.inspect)],
-      ...(section === "sewing"
+      ...(section === "sewing" || section === "finishing"
         ? [["QTY Transfer", String(data.transfer)]]
+        : []),
+      ...(data.process
+        ? [["Process", data.process === "WASH" ? "Wash" : "Non-Wash"]]
+        : []),
+      ...(data.cartons != null
+        ? [["Cartons checked", String(data.cartons)]]
         : []),
       ["Total defect", String(total)],
     ],
@@ -239,7 +244,14 @@ export default function App() {
   // keluar dari layar pemeriksaan yang sedang terbuka saat role/section DEV diganti
   const leaveCheckScreens = () => {
     if (
-      ["cutting", "final", "newcheck", "washingtype", "qcsewing", "success"].includes(screen)
+      [
+        "cutting",
+        "final",
+        "newcheck",
+        "washingtype",
+        "qcsewing",
+        "success",
+      ].includes(screen)
     ) {
       setJob(null);
       setResult(null);
@@ -425,8 +437,10 @@ export default function App() {
       return (
         <NewQcCheck
           hourly={cfg.frequency === "hourly"}
-          withTransfer={section === "sewing"}
+          withTransfer={section === "sewing" || section === "finishing"}
           withWashing={section === "washing"}
+          withProcess={section === "finishing"}
+          withCartons={section === "packing"}
           lineIds={su?.lineIds ?? []}
           onBack={() =>
             setScreen(section === "washing" ? "washingtype" : "dashboard")

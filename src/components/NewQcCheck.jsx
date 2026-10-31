@@ -26,11 +26,14 @@ export default function NewQcCheck({
   hourly = false,
   withTransfer = false, // true untuk sewing
   withWashing = false, // true untuk washing
+  withProcess = false, // true untuk finishing
+  withCartons = false, // true untuk packing
   lineIds = [], // dari session.user.lineIds
   onBack,
   onStart,
 }) {
   const [wash, setWash] = useState({ handfeel: "", grade: "" });
+  const [proc, setProc] = useState("");
   const [hours] = useState(allowedHours);
   const [hour, setHour] = useState(String(hours[0]));
   const [lineId, setLineId] = useState(lineIds[0] ?? "");
@@ -41,11 +44,12 @@ export default function NewQcCheck({
     color: "",
     inspect: "",
     transfer: "",
+    cartons: "",
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const numeric = name === "inspect" || name === "transfer";
+    const numeric = ["inspect", "transfer", "cartons"].includes(name);
     setValues((v) => ({
       ...v,
       [name]: numeric ? value.replace(/\D/g, "") : value,
@@ -65,6 +69,10 @@ export default function NewQcCheck({
       return setError("Transfer cannot be more than Inspect.");
     if (withWashing && (!wash.handfeel.trim() || !wash.grade.trim()))
       return setError("Please fill in handfeel and grade.");
+    if (withProcess && !proc)
+      return setError("Please choose the process (Wash / Non-Wash).");
+    if (withCartons && values.cartons === "")
+      return setError("Please fill in the cartons checked today.");
 
     const idx = lineIds.indexOf(lineId);
     onStart?.({
@@ -78,6 +86,8 @@ export default function NewQcCheck({
       hour: hourly ? Number(hour) : null,
       handfeel: withWashing ? wash.handfeel.trim() : undefined,
       grade: withWashing ? wash.grade.trim() : undefined,
+      process: withProcess ? proc : undefined,
+      cartons: withCartons ? Number(values.cartons) : undefined,
     });
   };
 
@@ -138,6 +148,21 @@ export default function NewQcCheck({
             <span className="nq-hint">
               You can select previous hours for follow-up entries.
             </span>
+          </label>
+        )}
+
+        {withProcess && (
+          <label className="nq-field">
+            <span className="nq-label">Process</span>
+            <select
+              value={proc}
+              onChange={(e) => setProc(e.target.value)}
+              required
+            >
+              <option value="">Select process</option>
+              <option value="WASH">Wash</option>
+              <option value="NON_WASH">Non-Wash</option>
+            </select>
           </label>
         )}
 
@@ -212,6 +237,22 @@ export default function NewQcCheck({
               inputMode="numeric"
               placeholder="Quantity to transfer"
               value={values.transfer}
+              onChange={handleChange}
+              autoComplete="off"
+              required
+            />
+          </label>
+        )}
+
+        {withCartons && (
+          <label className="nq-field">
+            <span className="nq-label">Cartons checked today</span>
+            <input
+              name="cartons"
+              type="text"
+              inputMode="numeric"
+              placeholder="Number of cartons"
+              value={values.cartons}
               onChange={handleChange}
               autoComplete="off"
               required
