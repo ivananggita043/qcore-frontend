@@ -160,3 +160,67 @@ export function useCuttingStats(requests, enabled) {
 
   return cache;
 }
+
+// laporan harian backend -> bentuk dashboard admin: { overview, lines }
+// "lines" untuk cutting = performa per proses
+export function cuttingAdminDay(rep) {
+  const insp = rep?.totalQuantityInspect ?? 0;
+  const def = rep?.totalDefects ?? 0;
+  const order = Object.values(PROCESS_ENUM);
+  const lines = (rep?.processSummaries ?? [])
+    .filter((p) => (p.totalQuantityInspect ?? 0) > 0)
+    .sort((a, b) => order.indexOf(a.processCheck) - order.indexOf(b.processCheck))
+    .map((p) => ({
+      name: PROCESS_LABEL[p.processCheck] ?? p.processCheck,
+      pct: Math.round(100 - (p.totalDefects / p.totalQuantityInspect) * 100),
+    }));
+  const processes = (rep?.processSummaries ?? [])
+    .filter((p) => (p.totalQuantityInspect ?? 0) > 0)
+    .sort((a, b) => order.indexOf(a.processCheck) - order.indexOf(b.processCheck))
+    .map((p) => {
+      const byType = {};
+      (p.detailRows ?? []).forEach((r) => {
+        if (r.defectTypeName && r.quantityDefect > 0)
+          byType[r.defectTypeName] = (byType[r.defectTypeName] || 0) + r.quantityDefect;
+      });
+      return {
+        name: PROCESS_LABEL[p.processCheck] ?? p.processCheck,
+        inspected: p.totalQuantityInspect,
+        defects: p.totalDefects,
+        rate: +((p.totalDefects / p.totalQuantityInspect) * 100).toFixed(1),
+        top: Object.entries(byType)
+          .map(([name, count]) => ({ name, count }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 3),
+      };
+    });
+  return {
+    overview: {
+      inspections: rep?.totalInspections ?? 0,
+      defect: def,
+      passRate: insp ? +(100 - (def / insp) * 100).toFixed(1) : 0,
+      total: insp,
+    },
+    lines,
+    processes,
+  };
+}
+
+export function useCuttingDay(date, enabled) {
+  const [state, setState] = useState({ data: null, loading: enabled, error: "" });
+
+  useEffect(() => {
+    if (!enabled) return;
+    const ctrl = new AbortController();
+    setState((s) => ({ ...s, loading: true, error: "" }));
+    fetchCuttingReport("daily", date, ctrl.signal)
+      .then((rep) => setState({ data: cuttingAdminDay(rep), loading: false, error: "" }))
+      .catch((e) => {
+        if (e?.name === "AbortError") return;
+        setState({ data: null, loading: false, error: e.message || "Failed to load Cutting data." });
+      });
+    return () => ctrl.abort();
+  }, [date, enabled]);
+
+  return state;
+}

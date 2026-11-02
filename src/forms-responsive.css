@@ -1,0 +1,77 @@
+/* ====== Form QC: menyesuaikan HP, tablet, desktop ======
+   Diimpor setelah responsive.css sehingga menimpa aturan lama. */
+
+/* ---------- HP: aman untuk notch & layar kecil ---------- */
+.newqc-form { padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
+.cc-body    { padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
+.fc         { padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px)); }
+
+@media (max-width: 359px) {
+  .qs-areas { grid-template-columns: 1fr; }
+  .qs-item { flex-wrap: wrap; }
+  .nq-field input, .nq-field select { font-size: 16px; }
+}
+
+/* HP posisi landscape: footer Submit tidak menutupi layar */
+@media (orientation: landscape) and (max-height: 500px) {
+  .qs-foot { position: static; }
+  .newqc, .qs, .cc { padding-top: 0; }
+}
+
+/* ---------- Teks & tombol form Cutting dinaikkan ke standar terbaca ---------- */
+.cc-hint { font-size: 15px; color: #555; }
+.cc-f > span { font-size: 15px; color: #555; }
+.cc-f input,
+.cc-f select { height: 56px; font-size: 16px; border-width: 1.5px; }
+.cc-warn, .cc-done, .cc-err { font-size: 15px; }
+.cc-add { height: 56px; font-size: 16px; font-weight: 600; }
+.cc-remove { min-height: 44px; font-size: 15px; }
+.cc-actions button { height: 52px; font-size: 16px; }
+.cc-actions .cc-submit { height: 52px; }
+.cc-step .lbl { font-size: 15px; }
+.cc-step button { min-height: 44px; }
+
+/* ---------- Tablet (≥ 768px) ---------- */
+@media (min-width: 768px) {
+  /* New QC Check: field dua kolom */
+  .newqc-head { max-width: 720px; }
+  .newqc-form {
+    max-width: 720px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 20px;
+    align-items: start;
+  }
+  .newqc-form > [role="alert"],
+  .newqc-form > .nq-submit { grid-column: 1 / -1; }
+
+  /* Defect input */
+  .qs-head { padding: 0 max(20px, calc((100% - 720px) / 2 + 20px)); }
+  .qs-main { max-width: 720px; }
+  .qs-submit { max-width: 720px; }
+  .qs-areas { grid-template-columns: repeat(3, 1fr); }
+
+  /* Cutting */
+  .cc-head { padding: 0 max(20px, calc((100% - 720px) / 2 + 20px)); }
+  .cc-hint, .cc-steps { max-width: 720px; }
+  .cc-body { max-width: 720px; }
+
+  /* Washing type: dua kartu berdampingan */
+  .wt { max-width: 720px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .wt-sub { grid-column: 1 / -1; }
+}
+
+/* ---------- Desktop (≥ 1100px) ---------- */
+@media (min-width: 1100px) {
+  /* Defect input: lebih lebar, daftar defect dua kolom */
+  .qs-head { padding: 0 max(20px, calc((100% - 960px) / 2 + 20px)); }
+  .qs-main { max-width: 960px; }
+  .qs-submit { max-width: 960px; }
+  .qs-areas { grid-template-columns: repeat(4, 1fr); }
+  .qs-list { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 20px; }
+  .qs-tab { flex: 0 1 auto; min-width: 170px; }
+
+  /* QC Final: dua kolom */
+  .fc-wrap { max-width: 1040px; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+  .fc-head, .fc-result, .fc-warn, .fc-submit { grid-column: 1 / -1; }
+}

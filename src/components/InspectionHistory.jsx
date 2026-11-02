@@ -30,7 +30,7 @@ function fieldsFor(section) {
       { k: "grade", label: "Grade", type: "text", required: true }
     );
   if (section === "finishing")
-    f.push({ k: "process", label: "Process", type: "select", options: ["WASH", "NON_WASH"], required: true });
+    f.push({ k: "process", label: "Process", type: "select", options: ["WASH", "NON_WASH"] });
   if (section === "packing")
     f.push({ k: "cartons", label: "Cartons checked today", type: "number", min: 0, required: true });
   f.push({ k: "comment", label: "Notes", type: "textarea" });
@@ -84,7 +84,7 @@ function toBody(section, row, v, lineId) {
     body.handfeel = v.handfeel;
     body.grade = v.grade;
   }
-  if (section === "finishing") body.process = v.process;
+  if (section === "finishing") body.process = v.process || undefined;
   if (section === "packing") body.qtyCheckCartonToday = Number(v.cartons);
   return body;
 }

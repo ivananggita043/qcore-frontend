@@ -6,15 +6,36 @@ import MenuDrawer from "./MenuDrawer.jsx";
 import "./DashboardUser.css";
 import "./AdminDashboard.css";
 import BuyerPerformance from "./BuyerPerformance.jsx";
-
+import { useCuttingDay } from "../api/cutting.js";
+import "./StatsLineDefects.css";
 /* ---------- helper tanggal ---------- */
 const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 const SHORT = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sept", "Oct", "Nov", "Dec",
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sept",
+  "Oct",
+  "Nov",
+  "Dec",
 ];
 const pad = (n) => String(n).padStart(2, "0");
 const toISO = (d) =>
@@ -45,14 +66,34 @@ const TODAY = toISO(new Date());
 // 90% ke atas hijau, 80-89% oranye, di bawah 80% merah
 const level = (p) => (p >= 90 ? "good" : p >= 80 ? "warn" : "bad");
 
-export default function AdminDashboard({ user, section, onNavigate, onBack, onLogout }) {
+export default function AdminDashboard({
+  user,
+  section,
+  onNavigate,
+  onBack,
+  onLogout,
+}) {
   const [date, setDate] = useState(TODAY);
   const [menuOpen, setMenuOpen] = useState(false);
   const [page, setPage] = useState("home");
   const dateRef = useRef(null);
 
-  const sec = String(section ?? user.section ?? user.process ?? "sewing").toLowerCase();
-  const { overview, lines } = useMemo(() => adminDay(sec, date), [sec, date]);
+  const sec = String(
+    section ?? user.section ?? user.process ?? "sewing",
+  ).toLowerCase();
+  const isCutting = sec === "cutting";
+  const live = useCuttingDay(date, isCutting);
+  const mock = useMemo(() => adminDay(sec, date), [sec, date]);
+  const {
+    overview,
+    lines,
+    processes = [],
+  } = isCutting
+    ? (live.data ?? {
+        overview: { inspections: 0, defect: 0, passRate: 0, total: 0 },
+        lines: [],
+      })
+    : mock;
   const isToday = date === TODAY;
 
   const openCalendar = () => {
@@ -139,13 +180,26 @@ export default function AdminDashboard({ user, section, onNavigate, onBack, onLo
 
         {/* Performa per line */}
         <h2 className="recent-title">
-          {isToday
-            ? "Today’s Line Performance"
-            : `Line Performance – ${shortDate(date)}`}
+          {isCutting
+            ? isToday
+              ? "Today’s Process Performance"
+              : `Process Performance – ${shortDate(date)}`
+            : isToday
+              ? "Today’s Line Performance"
+              : `Line Performance – ${shortDate(date)}`}
         </h2>
 
+        {isCutting && live.loading && <p className="empty">Loading…</p>}
+        {isCutting && live.error && (
+          <p className="empty" role="alert">
+            {live.error}
+          </p>
+        )}
+
         {lines.length === 0 ? (
-          <p className="empty">No data for this date.</p>
+          !(isCutting && (live.loading || live.error)) && (
+            <p className="empty">No data for this date.</p>
+          )
         ) : (
           <>
             <ul className="card perf">
@@ -170,7 +224,49 @@ export default function AdminDashboard({ user, section, onNavigate, onBack, onLo
             </p>
           </>
         )}
-       <BuyerPerformance sections={[sec]} date={date} />
+        {isCutting && processes.length > 0 && (
+          <>
+            <h2 className="recent-title">Top 3 Defects per Process</h2>
+            <ul className="card sld-list" style={{ padding: 14 }}>
+              {processes.map((p) => {
+                const max = Math.max(1, ...p.top.map((d) => d.count));
+                return (
+                  <li key={p.name} className="sld-line">
+                    <div className="sld-head">
+                      <span className="sld-nm">{p.name}</span>
+                      <span className="sld-rate">{p.rate}%</span>
+                    </div>
+                    <span className="sld-meta">
+                      {p.inspected} pcs inspected · {p.defects} defects
+                    </span>
+                    {p.top.length === 0 ? (
+                      <p className="hs-meta">No defects found.</p>
+                    ) : (
+                      <ol className="sld-top">
+                        {p.top.map((d, k) => (
+                          <li key={d.name}>
+                            <div className="row">
+                              <span>
+                                {k + 1}. {d.name}
+                              </span>
+                              <b>{d.count}</b>
+                            </div>
+                            <div className="bar">
+                              <i
+                                style={{ width: `${(d.count / max) * 100}%` }}
+                              />
+                            </div>
+                          </li>
+                        ))}
+                      </ol>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )}
+        {!isCutting && <BuyerPerformance sections={[sec]} date={date} />}
       </div>
 
       <MenuDrawer
