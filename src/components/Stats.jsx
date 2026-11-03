@@ -648,7 +648,9 @@ export default function Stats({ isSuper, section = "sewing", onBack }) {
               <p className="st-note">
                 {lines.kind === "section"
                   ? "Comparison between sections"
-                  : "Comparison between lines"}
+                  : lines.kind === "process"
+                    ? "Comparison between cutting processes"
+                    : "Comparison between lines"}
                 , sorted by the highest rate
               </p>
               <ul className="st-hbars">
@@ -671,10 +673,11 @@ export default function Stats({ isSuper, section = "sewing", onBack }) {
             </section>
           )}
 
-          {/* 4b. top 3 defect per line (khusus sewing) */}
-          {secs.length === 1 && secs[0] === "sewing" && (
-            <StatsLineDefects section="sewing" days={days} endISO={TODAY} />
-          )}
+          {/* 4b. top 3 defect per line / proses */}
+          {secs.length === 1 &&
+            (secs[0] === "sewing" || secs[0] === "cutting") && (
+              <StatsLineDefects section={secs[0]} days={days} endISO={TODAY} />
+            )}
 
           {/* 5. volume */}
           <section className="card st-card wide">

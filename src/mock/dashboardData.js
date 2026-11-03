@@ -2,21 +2,21 @@ import { hourSlots } from "../config/sections.js";
 
 /* ---------- profil data tiap section (satuan: check per hari) ---------- */
 const SECTION_PROFILE = {
-  cutting:   { perDay: [110, 160], passRate: [90, 98],   lines: 3, qc: [4, 6] },
-  sewing:    { perDay: [100, 150], passRate: [84, 96],   lines: 8, qc: [14, 20] },
-  washing:   { perDay: [90, 130],  passRate: [86, 97],   lines: 3, qc: [5, 8] },
-  finishing: { perDay: [100, 140], passRate: [90, 98],   lines: 5, qc: [9, 13] },
-  packing:   { perDay: [110, 160], passRate: [89, 98],   lines: 4, qc: [8, 12] },
-  final:     { perDay: [110, 150], passRate: [88, 97],   lines: 2, qc: [4, 6] }, // 1 check = 1 carton (40 pcs)
+  cutting: { perDay: [110, 160], passRate: [90, 98], lines: 3, qc: [4, 6] },
+  sewing: { perDay: [100, 150], passRate: [84, 96], lines: 8, qc: [14, 20] },
+  washing: { perDay: [90, 130], passRate: [86, 97], lines: 3, qc: [5, 8] },
+  finishing: { perDay: [100, 140], passRate: [90, 98], lines: 5, qc: [9, 13] },
+  packing: { perDay: [110, 160], passRate: [89, 98], lines: 4, qc: [8, 12] },
+  final: { perDay: [110, 150], passRate: [88, 97], lines: 2, qc: [4, 6] }, // 1 check = 1 carton (40 pcs)
 };
 
 const DEFECTS = {
-  cutting:   ["Salah ukuran", "Bergerigi", "Pola miring", "Kain cacat", "Notch salah"],
-  sewing:    ["Skip Stitch", "Broken Stitch", "Uneven Hem", "Puckering", "Ukuran tidak sesuai"],
-  washing:   ["Noda", "Warna belang", "Penyusutan", "Bau kimia", "Tekstur kasar"],
+  cutting: ["Salah ukuran", "Bergerigi", "Pola miring", "Kain cacat", "Notch salah"],
+  sewing: ["Skip Stitch", "Broken Stitch", "Uneven Hem", "Puckering", "Ukuran tidak sesuai"],
+  washing: ["Noda", "Warna belang", "Penyusutan", "Bau kimia", "Tekstur kasar"],
   finishing: ["Benang sisa", "Kotor/noda", "Setrika kurang", "Label salah", "Kancing lepas"],
-  packing:   ["Wrong carton count", "Missing label", "Wrong size sticker", "Torn polybag", "Damaged carton"],
-  final:     ["Visible stain", "Out of tolerance", "Loose thread", "Wrong assortment", "Misaligned print"],
+  packing: ["Wrong carton count", "Missing label", "Wrong size sticker", "Torn polybag", "Damaged carton"],
+  final: ["Visible stain", "Out of tolerance", "Loose thread", "Wrong assortment", "Misaligned print"],
 };
 
 const NAMES = { cutting: "Cutting", sewing: "Sewing", washing: "Washing", finishing: "Finishing", packing: "Packing", final: "Final" };
@@ -115,9 +115,9 @@ export function superDay(iso) {
   return {
     kpi: {
       inspections: { value: t.inspections, delta: pctChange(t.inspections, t.prev.inspections) },
-      passRate:    { value: t.passRate, delta: t.delta.passRate },
-      defects:     { value: t.defects, delta: pctChange(t.defects, t.prev.defects) },
-      activeQc:    { value: t.activeQc, delta: pctChange(t.activeQc, t.prev.activeQc) },
+      passRate: { value: t.passRate, delta: t.delta.passRate },
+      defects: { value: t.defects, delta: pctChange(t.defects, t.prev.defects) },
+      activeQc: { value: t.activeQc, delta: pctChange(t.activeQc, t.prev.activeQc) },
     },
     sections: t.sections.map((s) => ({
       key: s.section,
@@ -210,9 +210,9 @@ export function sectionDay(section, iso) {
 /* ================= performa per buyer & style (data tiruan) ================= */
 const BUYERS = [
   { name: "Victoria's Secret", styles: ["VS-2401", "VS-2402", "VS-2405"] },
-  { name: "Calvin Klein",      styles: ["CK-1101", "CK-1107"] },
-  { name: "Eileen Fisher",     styles: ["EF-330", "EF-342", "EF-351"] },
-  { name: "L.L.Bean",          styles: ["LB-710", "LB-715"] },
+  { name: "Calvin Klein", styles: ["CK-1101", "CK-1107"] },
+  { name: "Eileen Fisher", styles: ["EF-330", "EF-342", "EF-351"] },
+  { name: "L.L.Bean", styles: ["LB-710", "LB-715"] },
 ];
 
 function buyerRaw(sections, iso) {
@@ -380,6 +380,8 @@ export function statsDefects(sections, endISO, days) {
   };
 }
 
+const CUTTING_PROCESSES = ["Marker", "Fabric", "Spreading", "Cutting", "Fuse", "Bundle & Numbering"];
+
 // 4. Perbandingan: satu section -> per line, banyak section -> per section
 export function statsLines(sections, endISO, days) {
   const secs = validSecs(sections);
@@ -401,9 +403,13 @@ export function statsLines(sections, endISO, days) {
         .sort((a, b) => b.rate - a.rate),
     };
   }
+
   const sec = secs[0] ?? "sewing";
-  const n = SECTION_PROFILE[sec].lines;
-  const bias = Array.from({ length: n }, (_, k) => 0.6 + rng(`${sec}:line${k}:bias`)() * 0.9);
+  const names =
+    sec === "cutting"
+      ? CUTTING_PROCESSES
+      : Array.from({ length: SECTION_PROFILE[sec].lines }, (_, k) => `Line ${pad2(k + 1)}`);
+  const bias = names.map((_, k) => 0.6 + rng(`${sec}:line${k}:bias`)() * 0.9);
   const rows = bias
     .map((b, k) => {
       let sum = 0;
@@ -412,10 +418,10 @@ export function statsLines(sections, endISO, days) {
         const j = 0.9 + rng(`${iso}:${sec}:line${k}`)() * 0.2;
         sum += rateFrom(s.defects, s.inspections) * b * j;
       });
-      return { name: `Line ${pad2(k + 1)}`, rate: +(sum / dates.length).toFixed(1) };
+      return { name: names[k], rate: +(sum / dates.length).toFixed(1) };
     })
     .sort((a, b) => b.rate - a.rate);
-  return { kind: "line", rows };
+  return { kind: sec === "cutting" ? "process" : "line", rows };
 }
 
 // 5. Volume inspeksi per hari (jumlah check)
@@ -503,7 +509,11 @@ export function statsBuyerStyle(section, endISO, days) {
 // Top defect per line (data tiruan). Dipakai kartu "Top 3 defects per line" di halaman Statistics.
 export function statsLineDefects(section, endISO, days) {
   const key = SECTION_PROFILE[section] ? section : "sewing";
-  const n = SECTION_PROFILE[key].lines;
+  const names =
+    key === "cutting"
+      ? CUTTING_PROCESSES
+      : Array.from({ length: SECTION_PROFILE[key].lines }, (_, k) => `Line ${pad2(k + 1)}`);
+  const n = names.length;
   const types = DEFECTS[key];
   const dates = isoList(endISO, days);
 

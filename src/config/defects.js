@@ -34,7 +34,7 @@ export const TYPE_ONLY = {
 export const SECTION_EXTRA = {
   washing: {
     label: "WASHING",
-    types: ["HANDFEEL OOT", "COLOR OR BLEEDING", "OUT OF SHADE", "ODOR", "ABRASION"],
+    types: ["HANDFEEL OOT", "COLOR BLEEDING", "OUT OF SHADE", "ODOR", "ABRASION"],
   },
   finishing: {
     label: "FINISHING",

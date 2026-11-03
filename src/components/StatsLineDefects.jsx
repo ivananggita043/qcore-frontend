@@ -3,18 +3,26 @@ import { statsLineDefects } from "../mock/dashboardData.js";
 import "./StatsLineDefects.css";
 
 const num = (n) => Number(n).toLocaleString("en-US");
-const pct = (n) => `${Number(n).toLocaleString("en-US", { maximumFractionDigits: 1 })}%`;
+const pct = (n) =>
+  `${Number(n).toLocaleString("en-US", { maximumFractionDigits: 1 })}%`;
 const LIMIT = 4;
 
 export default function StatsLineDefects({ section = "sewing", days, endISO }) {
   const [all, setAll] = useState(false);
-  const rows = useMemo(() => statsLineDefects(section, endISO, days), [section, endISO, days]);
+  const unit = section === "cutting" ? "process" : "line";
+  const rows = useMemo(
+    () => statsLineDefects(section, endISO, days),
+    [section, endISO, days],
+  );
   const shown = all ? rows : rows.slice(0, LIMIT);
 
   return (
     <section className="card st-card wide">
-      <h2>Top 3 defects per line</h2>
-      <p className="st-note">Lines sorted by the highest defect rate</p>
+      <h2>Top 3 defects per {unit}</h2>
+      <p className="st-note">
+        {unit === "process" ? "Processes" : "Lines"} sorted by the highest
+        defect rate
+      </p>
 
       <ul className="sld-list">
         {shown.map((l, i) => {
@@ -56,8 +64,12 @@ export default function StatsLineDefects({ section = "sewing", days, endISO }) {
       </ul>
 
       {rows.length > LIMIT && (
-        <button type="button" className="sbs-more" onClick={() => setAll((v) => !v)}>
-          {all ? "Show less" : `View all (${rows.length} lines)`}
+        <button
+          type="button"
+          className="sbs-more"
+          onClick={() => setAll((v) => !v)}
+        >
+          {all ? "Show less" : `View all (${rows.length} ${unit === "process" ? "processes" : "lines"})`}
         </button>
       )}
     </section>

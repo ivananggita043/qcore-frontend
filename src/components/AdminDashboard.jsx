@@ -8,6 +8,8 @@ import "./AdminDashboard.css";
 import BuyerPerformance from "./BuyerPerformance.jsx";
 import { useCuttingDay } from "../api/cutting.js";
 import "./StatsLineDefects.css";
+import { useInspectionDay } from "../api/inspectionReports.js";
+
 /* ---------- helper tanggal ---------- */
 const MONTHS = [
   "January",
@@ -65,6 +67,11 @@ const TODAY = toISO(new Date());
 
 // 90% ke atas hijau, 80-89% oranye, di bawah 80% merah
 const level = (p) => (p >= 90 ? "good" : p >= 80 ? "warn" : "bad");
+const INSPECTION_LIVE = ["sewing", "washing"]; // tambahkan washing/finishing/packing nanti
+const EMPTY = {
+  overview: { inspections: 0, defect: 0, passRate: 0, total: 0 },
+  lines: [],
+};
 
 export default function AdminDashboard({
   user,
@@ -82,18 +89,19 @@ export default function AdminDashboard({
     section ?? user.section ?? user.process ?? "sewing",
   ).toLowerCase();
   const isCutting = sec === "cutting";
-  const live = useCuttingDay(date, isCutting);
+  const isInsp = INSPECTION_LIVE.includes(sec);
+  const isLive = isCutting || isInsp;
+  const liveCut = useCuttingDay(date, isCutting);
+  const liveInsp = useInspectionDay(sec, date, isInsp);
+  const live = isCutting ? liveCut : liveInsp;
   const mock = useMemo(() => adminDay(sec, date), [sec, date]);
   const {
     overview,
     lines,
     processes = [],
-  } = isCutting
-    ? (live.data ?? {
-        overview: { inspections: 0, defect: 0, passRate: 0, total: 0 },
-        lines: [],
-      })
-    : mock;
+    topDefects = [],
+    washingTypes = [],
+  } = isLive ? (live.data ?? EMPTY) : mock;
   const isToday = date === TODAY;
 
   const openCalendar = () => {
@@ -189,15 +197,15 @@ export default function AdminDashboard({
               : `Line Performance – ${shortDate(date)}`}
         </h2>
 
-        {isCutting && live.loading && <p className="empty">Loading…</p>}
-        {isCutting && live.error && (
+        {isLive && live.loading && <p className="empty">Loading…</p>}
+        {isLive && live.error && (
           <p className="empty" role="alert">
             {live.error}
           </p>
         )}
 
         {lines.length === 0 ? (
-          !(isCutting && (live.loading || live.error)) && (
+          !(isLive && (live.loading || live.error)) && (
             <p className="empty">No data for this date.</p>
           )
         ) : (
@@ -266,7 +274,57 @@ export default function AdminDashboard({
             </ul>
           </>
         )}
-        {!isCutting && <BuyerPerformance sections={[sec]} date={date} />}
+        {isInsp && topDefects.length > 0 && (
+          <>
+            <h2 className="recent-title">Top 3 Defects</h2>
+            <ul className="card sa-top">
+              {topDefects.map((d, i) => {
+                const max = Math.max(1, topDefects[0].count);
+                return (
+                  <li key={d.name}>
+                    <span className="rank">{i + 1}</span>
+                    <div className="grow">
+                      <div className="top">
+                        <span className="nm">{d.name}</span>
+                        <strong>{d.count}</strong>
+                      </div>
+                      <div className="bar red">
+                        <i style={{ width: `${(d.count / max) * 100}%` }} />
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )}
+        {sec === "washing" && washingTypes.length > 0 && (
+          <>
+            <h2 className="recent-title">Bulk vs Repair</h2>
+            <ul className="card perf">
+              {washingTypes.map((w) => (
+                <li key={w.name} className={`perf-row ${level(w.pct)}`}>
+                  <div className="top">
+                    <span className="nm">{w.name}</span>
+                    <strong>{w.pct}%</strong>
+                  </div>
+                  <div
+                    className="bar"
+                    role="img"
+                    aria-label={`${w.name} ${w.pct} percent`}
+                  >
+                    <i style={{ width: `${w.pct}%` }} />
+                  </div>
+                  <p className="sld-meta" style={{ margin: "6px 0 0" }}>
+                    {w.inspections} inspections · {w.qty} pcs · {w.defects}{" "}
+                    defects
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+        {!isLive && <BuyerPerformance sections={[sec]} date={date} />}
       </div>
 
       <MenuDrawer
