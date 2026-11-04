@@ -67,7 +67,7 @@ const TODAY = toISO(new Date());
 
 // 90% ke atas hijau, 80-89% oranye, di bawah 80% merah
 const level = (p) => (p >= 90 ? "good" : p >= 80 ? "warn" : "bad");
-const INSPECTION_LIVE = ["sewing", "washing"]; // tambahkan washing/finishing/packing nanti
+const INSPECTION_LIVE = ["sewing", "washing", "finishing", "packing"]; // tambahkan packing nanti
 const EMPTY = {
   overview: { inspections: 0, defect: 0, passRate: 0, total: 0 },
   lines: [],

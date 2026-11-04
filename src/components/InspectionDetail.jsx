@@ -64,6 +64,7 @@ export default function InspectionDetail({
   section,
   item,
   typesById,
+  canEdit = true,
   canDelete,
   onBack,
   onEdit,
@@ -182,28 +183,30 @@ export default function InspectionDetail({
             </dl>
 
             <div className="idt-actions">
-              <button
-                type="button"
-                className="idt-btn primary"
-                onClick={() => onEdit(c)}
-                disabled={busy}
-              >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
+              {canEdit && (
+                <button
+                  type="button"
+                  className="idt-btn primary"
+                  onClick={() => onEdit(c)}
+                  disabled={busy}
                 >
-                  <path d="M12 20h9" />
-                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                </svg>
-                Edit
-              </button>
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                  </svg>
+                  Edit
+                </button>
+              )}
 
               {canDelete &&
                 (!confirmDel ? (
@@ -334,7 +337,7 @@ export default function InspectionDetail({
             <section className="idt-card" aria-label="Notes">
               <div className="idt-cardhead">
                 <h2>Notes</h2>
-                {!editNote && (
+                {!editNote && canEdit && (
                   <button
                     type="button"
                     className="idt-mini"

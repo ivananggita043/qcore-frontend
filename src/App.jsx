@@ -110,6 +110,9 @@ function buildStandardResult(section, label, data) {
       ...(data.cartons != null
         ? [["Cartons checked", String(data.cartons)]]
         : []),
+      ...(section === "packing" && data.inspect != null
+        ? [["QTY Inspect", String(data.inspect)]]
+        : []),
       ["Total defect", String(total)],
     ],
     lines: data.defects.map(

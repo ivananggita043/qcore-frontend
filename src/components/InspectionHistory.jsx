@@ -144,7 +144,15 @@ function toBody(section, row, v, lineId) {
 }
 
 /* ---------- lembar edit ---------- */
-function EditSheet({ section, item, lineIdOf, defectNames, onClose, onSave }) {
+function EditSheet({
+  section,
+  item,
+  lineIds,
+  lineIdOf,
+  defectNames,
+  onClose,
+  onSave,
+}) {
   const fields = useMemo(() => fieldsFor(section), [section]);
   const [v, setV] = useState(() =>
     Object.fromEntries(fields.map((f) => [f.k, String(item[f.k] ?? "")])),
@@ -185,7 +193,7 @@ function EditSheet({ section, item, lineIdOf, defectNames, onClose, onSave }) {
       return setErr(
         "Transfer quantity cannot be greater than inspected quantity.",
       );
-    const lineId = lineIdOf(item);
+    const lineId = lineIdOf ? lineIdOf(item) : lineIds[0];
     if (!lineId)
       return setErr(
         "This record cannot be edited here because its line is unknown. Please contact your admin.",
@@ -249,7 +257,9 @@ function EditSheet({ section, item, lineIdOf, defectNames, onClose, onSave }) {
                     f.k,
                     f.type === "number"
                       ? e.target.value.replace(/\D/g, "")
-                      : e.target.value,
+                      : f.k === "style"
+                        ? e.target.value.toUpperCase()
+                        : e.target.value,
                   )
                 }
               />
@@ -376,13 +386,23 @@ export default function InspectionHistory({
     [defectTypes],
   );
 
+  // user biasa hanya boleh melihat data sewing; admin boleh edit semua
+  const canEdit = isAdmin || section !== "sewing";
+
+  const norm = (s) =>
+    String(s ?? "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+
   // admin: cari ID dari nama line. QC: hanya aman bila akun punya satu line.
-  const lineIdOf = (item) =>
-    isAdmin
-      ? (lines.find((l) => l.name === item.raw.lineName)?.id ?? null)
-      : lineIds.length === 1
-        ? lineIds[0]
-        : null;
+  const lineIdOf = (item) => {
+    if (isAdmin) {
+      const n = norm(item.lineName);
+      return adminLines.find((l) => norm(l.name) === n)?.id;
+    }
+    return lineIds.length === 1 ? lineIds[0] : undefined;
+  };
 
   const flash = (msg) => {
     setToast(msg);
@@ -436,15 +456,13 @@ export default function InspectionHistory({
           onEdit={setEditing}
           onDelete={doDelete}
           onSaveNotes={saveNotes}
+          canEdit={canEdit}
         />
         {editing && (
           <EditSheet
             section={section}
             item={editing}
-            lineIds={(() => {
-              const id = lineIdOf(editing);
-              return id ? [id] : [];
-            })()}
+            lineIdOf={lineIdOf}
             defectNames={defectNames}
             onClose={() => setEditing(null)}
             onSave={saveEdit}

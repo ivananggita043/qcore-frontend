@@ -4,6 +4,14 @@ import { loadSession } from "../auth/session.js";
 
 const BASE = "/user/cutting-inspections";
 
+// path menurut role. Admin di backend saat ini "/cutting-inspections" (tanpa /admin).
+const base = () => {
+  const role = loadSession()?.user?.role;
+  if (role === "super_admin") return "/super-admin/cutting-inspections";
+  if (role === "admin") return "/cutting-inspections";
+  return BASE;
+};
+
 // key proses di form -> enum backend
 export const PROCESS_ENUM = {
   marker: "MARKER",
@@ -15,7 +23,7 @@ export const PROCESS_ENUM = {
 };
 
 export async function fetchDefectTypes(processKey, signal) {
-  const data = await apiFetch(`${BASE}/search?processCheck=${PROCESS_ENUM[processKey]}`, { signal });
+  const data = await apiFetch(`${base()}/search?processCheck=${PROCESS_ENUM[processKey]}`, { signal });
   return (Array.isArray(data) ? data : []).map((t) => ({ id: t.id, name: t.name }));
 }
 
@@ -97,10 +105,16 @@ export function cuttingUserDay(list, iso) {
 }
 
 export const fetchMyCuttingInspections = (signal) =>
-  apiFetch(`${BASE}/all`, { signal }).then((d) => (Array.isArray(d) ? d : []));
+  apiFetch(`${base()}/all`, { signal }).then((d) => (Array.isArray(d) ? d : []));
 
 export const updateCuttingInspection = (id, body) =>
-  apiFetch(`${BASE}/${id}`, { method: "PUT", body });
+  apiFetch(`${base()}/${id}`, { method: "PUT", body });
+
+export const patchCuttingComment = (id, comment) =>
+  apiFetch(`${base()}/${id}/comment`, { method: "PATCH", body: { comment } });
+
+export const deleteCuttingInspection = (id) =>
+  apiFetch(`${base()}/${id}`, { method: "DELETE" });
 
 const reportBase = () =>
   loadSession()?.user?.role === "super_admin" ? "/super-admin/cutting-reports" : "/admin/cutting-reports";

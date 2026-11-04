@@ -52,7 +52,11 @@ export default function NewQcCheck({
     const numeric = ["inspect", "transfer", "cartons"].includes(name);
     setValues((v) => ({
       ...v,
-      [name]: numeric ? value.replace(/\D/g, "") : value,
+      [name]: numeric
+        ? value.replace(/\D/g, "")
+        : name === "style"
+          ? value.toUpperCase()
+          : value,
     }));
   };
 

@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   PROCESS_ENUM,
+  deleteCuttingInspection,
   fetchDefectTypes,
   fetchMyCuttingInspections,
+  patchCuttingComment,
   updateCuttingInspection,
 } from "../api/cutting.js";
 import "./History.css";
+import CuttingDetail from "./CuttingDetail.jsx";
 
 const SHORT = [
   "Jan",
@@ -41,7 +44,7 @@ function toRow(x) {
   const items = x.items ?? [];
   const t = new Date(x.createdAt);
   const qty = items.reduce((s, i) => s + (i.quantityInspect || 0), 0);
-  const defect = items.reduce((s, i) => s + (i.quantityDefects || 0), 0);
+  const defect = items.reduce((s, i) => s + (i.quantityDefect || 0), 0);
   const first = items[0];
   const process = LABEL[x.processCheck] ?? x.processCheck;
   const id = `CUT-${String(x.id).slice(0, 4).toUpperCase()}`;
@@ -221,7 +224,14 @@ function EditSheet({ row, onClose, onSave }) {
                   <span>{label} *</span>
                   <input
                     value={it[k]}
-                    onChange={(e) => upd(n, { [k]: e.target.value })}
+                    onChange={(e) =>
+                      upd(n, {
+                        [k]:
+                          k === "style"
+                            ? e.target.value.toUpperCase()
+                            : e.target.value,
+                      })
+                    }
                   />
                 </label>
               ))}
@@ -306,7 +316,7 @@ function EditSheet({ row, onClose, onSave }) {
   );
 }
 
-export default function CuttingHistory({ user, onBack }) {
+export default function CuttingHistory({ user, isAdmin = false, onBack }) {
   const [state, setState] = useState({ list: [], loading: true, error: "" });
   const [tick, setTick] = useState(0);
   const [query, setQuery] = useState("");
@@ -315,6 +325,7 @@ export default function CuttingHistory({ user, onBack }) {
   const [shown, setShown] = useState(PAGE);
   const [editing, setEditing] = useState(null);
   const [toast, setToast] = useState("");
+  const [detailKey, setDetailKey] = useState(null);
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -351,13 +362,62 @@ export default function CuttingHistory({ user, onBack }) {
     return list.sort((a, b) => (sort === "recent" ? b.ts - a.ts : a.ts - b.ts));
   }, [all, query, buyer, sort]);
 
-  const saveEdit = async (body) => {
-    await updateCuttingInspection(editing.key, body); // error ditangani lembar edit
-    setEditing(null);
-    setTick((t) => t + 1);
-    setToast("Changes saved.");
+  const detail = detailKey ? all.find((r) => r.key === detailKey) : null;
+
+  const flash = (msg) => {
+    setToast(msg);
     setTimeout(() => setToast(""), 2200);
   };
+
+  const saveEdit = async (body) => {
+    await updateCuttingInspection(editing.key, body);
+    setEditing(null);
+    setTick((t) => t + 1);
+    flash("Changes saved.");
+  };
+
+  const saveNotes = async (row, note) => {
+    const saved = await patchCuttingComment(row.key, note || null);
+    setState((s) => ({
+      ...s,
+      list: s.list.map((x) => (x.id === saved.id ? saved : x)),
+    }));
+    flash("Notes saved.");
+  };
+
+  const doDelete = async (row) => {
+    await deleteCuttingInspection(row.key);
+    setState((s) => ({ ...s, list: s.list.filter((x) => x.id !== row.key) }));
+    setDetailKey(null);
+    flash("Check deleted.");
+  };
+
+  if (detail)
+    return (
+      <>
+        <CuttingDetail
+          item={detail}
+          canEdit
+          canDelete
+          onBack={() => setDetailKey(null)}
+          onEdit={setEditing}
+          onDelete={doDelete}
+          onSaveNotes={saveNotes}
+        />
+        {editing && (
+          <EditSheet
+            row={editing}
+            onClose={() => setEditing(null)}
+            onSave={saveEdit}
+          />
+        )}
+        {toast && (
+          <div className="hs-toast" role="status">
+            {toast}
+          </div>
+        )}
+      </>
+    );
 
   return (
     <main className="hs">
@@ -455,7 +515,20 @@ export default function CuttingHistory({ user, onBack }) {
         <>
           <ul className="hs-list">
             {rows.slice(0, shown).map((c) => (
-              <li key={c.key} className="hs-card">
+              <li
+                key={c.key}
+                className="hs-card click"
+                role="button"
+                tabIndex={0}
+                aria-label={`Open detail ${c.id}`}
+                onClick={() => setDetailKey(c.key)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setDetailKey(c.key);
+                  }
+                }}
+              >
                 <span className="hs-id">{c.id}</span>
                 <span className="hs-badges">
                   {c.edited && <span className="hs-badge edited">Edited</span>}
@@ -467,27 +540,6 @@ export default function CuttingHistory({ user, onBack }) {
                 <span className="hs-meta r">
                   {c.summary} - {c.qty} pcs
                 </span>
-                <button
-                  type="button"
-                  className="hs-edit"
-                  onClick={() => setEditing(c)}
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M12 20h9" />
-                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                  </svg>
-                  Edit
-                </button>
               </li>
             ))}
           </ul>
@@ -504,13 +556,6 @@ export default function CuttingHistory({ user, onBack }) {
         </>
       )}
 
-      {editing && (
-        <EditSheet
-          row={editing}
-          onClose={() => setEditing(null)}
-          onSave={saveEdit}
-        />
-      )}
       {toast && (
         <div className="hs-toast" role="status">
           {toast}
