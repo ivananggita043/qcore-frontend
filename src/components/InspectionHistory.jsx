@@ -1,13 +1,29 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   PREFIX,
+  deleteInspection,
   fetchMyInspections,
   loadDefectTypes,
   updateInspection,
 } from "../api/inspections.js";
+import { fetchLines } from "../api/users.js";
+import InspectionDetail from "./InspectionDetail.jsx";
 import "./History.css";
 
-const SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"];
+const SHORT = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sept",
+  "Oct",
+  "Nov",
+  "Dec",
+];
 const pad = (n) => String(n).padStart(2, "0");
 const PAGE = 30;
 
@@ -16,23 +32,52 @@ const BASIC = [
   { k: "buyer", label: "Buyer", type: "text", required: true },
   { k: "style", label: "Style", type: "text", required: true },
   { k: "color", label: "Color", type: "text", required: true },
-  { k: "qty", label: "Inspected qty (pcs)", type: "number", min: 1, required: true },
+  {
+    k: "qty",
+    label: "Inspected qty (pcs)",
+    type: "number",
+    min: 1,
+    required: true,
+  },
 ];
 
 function fieldsFor(section) {
   const f = [...BASIC];
   if (section === "sewing" || section === "finishing")
-    f.push({ k: "transfer", label: "Transfer (pcs)", type: "number", min: 0, required: true });
+    f.push({
+      k: "transfer",
+      label: "Transfer (pcs)",
+      type: "number",
+      min: 0,
+      required: true,
+    });
   if (section === "washing")
     f.push(
-      { k: "washingType", label: "Washing type", type: "select", options: ["BULK", "REPAIR"], required: true },
+      {
+        k: "washingType",
+        label: "Washing type",
+        type: "select",
+        options: ["BULK", "REPAIR"],
+        required: true,
+      },
       { k: "handfeel", label: "Handfeel", type: "text", required: true },
-      { k: "grade", label: "Grade", type: "text", required: true }
+      { k: "grade", label: "Grade", type: "text", required: true },
     );
   if (section === "finishing")
-    f.push({ k: "process", label: "Process", type: "select", options: ["WASH", "NON_WASH"] });
+    f.push({
+      k: "process",
+      label: "Process",
+      type: "select",
+      options: ["WASH", "NON_WASH"],
+    });
   if (section === "packing")
-    f.push({ k: "cartons", label: "Cartons checked today", type: "number", min: 0, required: true });
+    f.push({
+      k: "cartons",
+      label: "Cartons checked today",
+      type: "number",
+      min: 0,
+      required: true,
+    });
   f.push({ k: "comment", label: "Notes", type: "textarea" });
   return f;
 }
@@ -60,6 +105,12 @@ function toRow(section, x) {
     comment: x.comment ?? "",
     slot: x.inspectionTimeSlot ?? "",
     edited: Boolean(x.updatedAt) && new Date(x.updatedAt) - t > 1000,
+    by: x.submittedByName ?? "",
+    lineName: x.lineName ?? "",
+    lineName: x.lineName ?? "",
+    by: x.submittedByName ?? "",
+    totalDefect:
+      x.totalDefect ?? (x.defects ?? []).reduce((a, d) => a + d.quantity, 0),
   };
 }
 
@@ -71,7 +122,10 @@ function toBody(section, row, v, lineId) {
     colorName: v.color,
     lineId,
     inspectedQuantity: Number(v.qty),
-    transferQuantity: section === "sewing" || section === "finishing" ? Number(v.transfer) : row.transfer,
+    transferQuantity:
+      section === "sewing" || section === "finishing"
+        ? Number(v.transfer)
+        : row.transfer,
     comment: v.comment || null,
     defects: (row.raw.defects ?? []).map((d) => ({
       defectTypeId: d.defectTypeId,
@@ -90,10 +144,10 @@ function toBody(section, row, v, lineId) {
 }
 
 /* ---------- lembar edit ---------- */
-function EditSheet({ section, item, lineIds, defectNames, onClose, onSave }) {
+function EditSheet({ section, item, lineIdOf, defectNames, onClose, onSave }) {
   const fields = useMemo(() => fieldsFor(section), [section]);
   const [v, setV] = useState(() =>
-    Object.fromEntries(fields.map((f) => [f.k, String(item[f.k] ?? "")]))
+    Object.fromEntries(fields.map((f) => [f.k, String(item[f.k] ?? "")])),
   );
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
@@ -110,22 +164,38 @@ function EditSheet({ section, item, lineIds, defectNames, onClose, onSave }) {
       if (f.type === "number" && val !== "") {
         const n = Number(val);
         if (!Number.isInteger(n) || n < (f.min ?? 0))
-          return setErr(`${f.label} must be a whole number, minimum ${f.min ?? 0}.`);
+          return setErr(
+            `${f.label} must be a whole number, minimum ${f.min ?? 0}.`,
+          );
       }
     }
     const qty = Number(v.qty);
-    const totalDefect = (item.raw.defects ?? []).reduce((s, d) => s + d.quantity, 0);
+    const totalDefect = (item.raw.defects ?? []).reduce(
+      (s, d) => s + d.quantity,
+      0,
+    );
     if (totalDefect > qty)
-      return setErr(`Inspected qty cannot be less than the recorded defects (${totalDefect}).`);
-    if ((section === "sewing" || section === "finishing") && Number(v.transfer) > qty)
-      return setErr("Transfer quantity cannot be greater than inspected quantity.");
-    if (lineIds.length !== 1)
-      return setErr("This record cannot be edited here because its line is unknown. Please contact your admin.");
-
-    const clean = Object.fromEntries(Object.entries(v).map(([k, val]) => [k, String(val).trim()]));
+      return setErr(
+        `Inspected qty cannot be less than the recorded defects (${totalDefect}).`,
+      );
+    if (
+      (section === "sewing" || section === "finishing") &&
+      Number(v.transfer) > qty
+    )
+      return setErr(
+        "Transfer quantity cannot be greater than inspected quantity.",
+      );
+    const lineId = lineIdOf(item);
+    if (!lineId)
+      return setErr(
+        "This record cannot be edited here because its line is unknown. Please contact your admin.",
+      );
+    const clean = Object.fromEntries(
+      Object.entries(v).map(([k, val]) => [k, String(val).trim()]),
+    );
     setBusy(true);
     try {
-      await onSave(toBody(section, item, clean, lineIds[0]));
+      await onSave(toBody(section, item, clean, lineId));
     } catch (e) {
       setErr(e?.message || "Failed to save. Please try again.");
       setBusy(false);
@@ -136,27 +206,52 @@ function EditSheet({ section, item, lineIds, defectNames, onClose, onSave }) {
 
   return (
     <div className="hs-overlay" onClick={onClose}>
-      <div className="hs-sheet" role="dialog" aria-modal="true" aria-label="Edit check"
-           onClick={(e) => e.stopPropagation()}>
+      <div
+        className="hs-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Edit check"
+        onClick={(e) => e.stopPropagation()}
+      >
         <h2 className="hs-sheet-title">Edit {item.id}</h2>
-        <p className="hs-sheet-sub">{section.toUpperCase()} - {item.label} - {item.time}</p>
+        <p className="hs-sheet-sub">
+          {section.toUpperCase()} - {item.label} - {item.time}
+        </p>
 
         {fields.map((f) => (
           <label key={f.k} className="hs-field">
-            <span>{f.label}{f.required ? " *" : ""}</span>
+            <span>
+              {f.label}
+              {f.required ? " *" : ""}
+            </span>
             {f.type === "select" ? (
               <select value={v[f.k]} onChange={(e) => set(f.k, e.target.value)}>
                 <option value="">- select -</option>
-                {f.options.map((o) => <option key={o} value={o}>{o}</option>)}
+                {f.options.map((o) => (
+                  <option key={o} value={o}>
+                    {o}
+                  </option>
+                ))}
               </select>
             ) : f.type === "textarea" ? (
-              <textarea rows={3} value={v[f.k]} onChange={(e) => set(f.k, e.target.value)} />
+              <textarea
+                rows={3}
+                value={v[f.k]}
+                onChange={(e) => set(f.k, e.target.value)}
+              />
             ) : (
               <input
                 type={f.type === "number" ? "text" : f.type}
                 inputMode={f.type === "number" ? "numeric" : undefined}
                 value={v[f.k]}
-                onChange={(e) => set(f.k, f.type === "number" ? e.target.value.replace(/\D/g, "") : e.target.value)}
+                onChange={(e) =>
+                  set(
+                    f.k,
+                    f.type === "number"
+                      ? e.target.value.replace(/\D/g, "")
+                      : e.target.value,
+                  )
+                }
               />
             )}
           </label>
@@ -177,11 +272,27 @@ function EditSheet({ section, item, lineIds, defectNames, onClose, onSave }) {
           )}
         </div>
 
-        {err && <p className="hs-err" role="alert">{err}</p>}
+        {err && (
+          <p className="hs-err" role="alert">
+            {err}
+          </p>
+        )}
 
         <div className="hs-actions">
-          <button type="button" className="hs-btn ghost" onClick={onClose} disabled={busy}>Cancel</button>
-          <button type="button" className="hs-btn" onClick={save} disabled={busy}>
+          <button
+            type="button"
+            className="hs-btn ghost"
+            onClick={onClose}
+            disabled={busy}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="hs-btn"
+            onClick={save}
+            disabled={busy}
+          >
             {busy ? "Saving…" : "Save"}
           </button>
         </div>
@@ -191,15 +302,24 @@ function EditSheet({ section, item, lineIds, defectNames, onClose, onSave }) {
 }
 
 /* ---------- halaman ---------- */
-export default function InspectionHistory({ user, section = "washing", lineIds = [], onBack }) {
+export default function InspectionHistory({
+  user,
+  section = "washing",
+  lineIds = [],
+  isAdmin = false,
+  onBack,
+}) {
   const [state, setState] = useState({ list: [], loading: true, error: "" });
-  const [defectNames, setDefectNames] = useState({});
+  const [defectTypes, setDefectTypes] = useState({}); // id -> {id,name,category,areaName}
+  const [adminLines, setAdminLines] = useState([]);
+  const [detailKey, setDetailKey] = useState(null);
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("recent");
   const [buyer, setBuyer] = useState("all");
   const [shown, setShown] = useState(PAGE);
   const [editing, setEditing] = useState(null);
   const [toast, setToast] = useState("");
+  const [lines, setLines] = useState([]);
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -208,47 +328,159 @@ export default function InspectionHistory({ user, section = "washing", lineIds =
       .then((list) => setState({ list, loading: false, error: "" }))
       .catch((e) => {
         if (e?.name === "AbortError") return;
-        setState({ list: [], loading: false, error: e.message || "Failed to load history." });
+        setState({
+          list: [],
+          loading: false,
+          error: e.message || "Failed to load history.",
+        });
       });
     loadDefectTypes()
-      .then((all) => setDefectNames(Object.fromEntries(all.map((t) => [t.id, t.name]))))
-      .catch(() => {}); // nama defect hanya pelengkap
+      .then((all) =>
+        setDefectTypes(Object.fromEntries(all.map((t) => [t.id, t]))),
+      )
+      .catch(() => {});
+    if (isAdmin)
+      fetchLines(ctrl.signal)
+        .then(setAdminLines)
+        .catch(() => {});
     return () => ctrl.abort();
-  }, [section]);
+  }, [section, isAdmin]);
 
   const all = useMemo(
     () => state.list.map((x) => toRow(section, x)).sort((a, b) => b.ts - a.ts),
-    [state.list, section]
+    [state.list, section],
   );
-  const buyers = useMemo(() => [...new Set(all.map((c) => c.buyer))].sort(), [all]);
+  const buyers = useMemo(
+    () => [...new Set(all.map((c) => c.buyer))].sort(),
+    [all],
+  );
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
     let list = all.filter(
       (c) =>
         (buyer === "all" || c.buyer === buyer) &&
-        (!q || `${c.id} ${c.buyer} ${c.style} ${c.color} ${c.label} ${c.time} ${c.edited ? "edited" : ""}`
-          .toLowerCase().includes(q))
+        (!q ||
+          `${c.id} ${c.buyer} ${c.style} ${c.color} ${c.label} ${c.time} ${c.by} ${c.lineName} ${c.edited ? "edited" : ""}`
+            .toLowerCase()
+            .includes(q)),
     );
     if (sort === "oldest") list = [...list].reverse();
     return list;
   }, [all, query, buyer, sort]);
 
-  const saveEdit = async (body) => {
-    const saved = await updateInspection(editing.key, body); // error ditangani lembar edit
-    setState((s) => ({ ...s, list: s.list.map((x) => (x.id === saved.id ? saved : x)) }));
-    setEditing(null);
-    setToast("Changes saved.");
+  const detail = detailKey ? all.find((c) => c.key === detailKey) : null;
+  const defectNames = useMemo(
+    () =>
+      Object.fromEntries(Object.values(defectTypes).map((t) => [t.id, t.name])),
+    [defectTypes],
+  );
+
+  // admin: cari ID dari nama line. QC: hanya aman bila akun punya satu line.
+  const lineIdOf = (item) =>
+    isAdmin
+      ? (lines.find((l) => l.name === item.raw.lineName)?.id ?? null)
+      : lineIds.length === 1
+        ? lineIds[0]
+        : null;
+
+  const flash = (msg) => {
+    setToast(msg);
     setTimeout(() => setToast(""), 2200);
   };
+  const replaceItem = (saved) =>
+    setState((s) => ({
+      ...s,
+      list: s.list.map((x) => (x.id === saved.id ? saved : x)),
+    }));
+
+  const saveNotes = async (row, note) => {
+    const lineId = lineIdOf(row);
+    if (!lineId)
+      throw new Error(
+        "Line is unknown, so notes cannot be saved. Please contact your admin.",
+      );
+    const v = Object.fromEntries(
+      fieldsFor(section).map((f) => [f.k, String(row[f.k] ?? "")]),
+    );
+    v.comment = note.trim();
+    replaceItem(
+      await updateInspection(row.key, toBody(section, row, v, lineId)),
+    );
+    flash("Notes saved.");
+  };
+
+  const doDelete = async (row) => {
+    await deleteInspection(row.key);
+    setState((s) => ({ ...s, list: s.list.filter((x) => x.id !== row.key) }));
+    setDetailKey(null);
+    flash("Check deleted.");
+  };
+
+  const saveEdit = async (body) => {
+    const saved = await updateInspection(editing.key, body);
+    replaceItem(saved);
+    setEditing(null);
+    flash("Changes saved.");
+  };
+
+  if (detail)
+    return (
+      <>
+        <InspectionDetail
+          section={section}
+          item={detail}
+          typesById={defectTypes}
+          canDelete={isAdmin}
+          onBack={() => setDetailKey(null)}
+          onEdit={setEditing}
+          onDelete={doDelete}
+          onSaveNotes={saveNotes}
+        />
+        {editing && (
+          <EditSheet
+            section={section}
+            item={editing}
+            lineIds={(() => {
+              const id = lineIdOf(editing);
+              return id ? [id] : [];
+            })()}
+            defectNames={defectNames}
+            onClose={() => setEditing(null)}
+            onSave={saveEdit}
+          />
+        )}
+        {toast && (
+          <div className="hs-toast" role="status">
+            {toast}
+          </div>
+        )}
+      </>
+    );
 
   return (
     <main className="hs">
       <header className="hs-head">
-        <button type="button" className="hs-back" aria-label="Back" onClick={onBack}>
-          <svg width="12" height="20" viewBox="0 0 12 20" fill="none" aria-hidden="true">
-            <path d="M10 2 2 10l8 8" stroke="currentColor" strokeWidth="1.8"
-                  strokeLinecap="round" strokeLinejoin="round" />
+        <button
+          type="button"
+          className="hs-back"
+          aria-label="Back"
+          onClick={onBack}
+        >
+          <svg
+            width="12"
+            height="20"
+            viewBox="0 0 12 20"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M10 2 2 10l8 8"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </button>
         <h1 className="hs-title">{user?.area ?? section.toUpperCase()}</h1>
@@ -256,8 +488,16 @@ export default function InspectionHistory({ user, section = "washing", lineIds =
 
       <div className="hs-tools">
         <label className="hs-search">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            aria-hidden="true"
+          >
             <circle cx="11" cy="11" r="7" />
             <path d="m20 20-3.5-3.5" />
           </svg>
@@ -266,18 +506,37 @@ export default function InspectionHistory({ user, section = "washing", lineIds =
             value={query}
             placeholder="Search by buyer, style, or color..."
             aria-label="Search history"
-            onChange={(e) => { setQuery(e.target.value); setShown(PAGE); }}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setShown(PAGE);
+            }}
           />
         </label>
         <div className="hs-filters">
-          <select className="hs-select" value={sort} aria-label="sort" onChange={(e) => setSort(e.target.value)}>
+          <select
+            className="hs-select"
+            value={sort}
+            aria-label="sort"
+            onChange={(e) => setSort(e.target.value)}
+          >
             <option value="recent">Recent</option>
             <option value="oldest">Oldest</option>
           </select>
-          <select className="hs-select" value={buyer} aria-label="Filter buyer"
-                  onChange={(e) => { setBuyer(e.target.value); setShown(PAGE); }}>
+          <select
+            className="hs-select"
+            value={buyer}
+            aria-label="Filter buyer"
+            onChange={(e) => {
+              setBuyer(e.target.value);
+              setShown(PAGE);
+            }}
+          >
             <option value="all">All Buyers</option>
-            {buyers.map((b) => <option key={b} value={b}>{b}</option>)}
+            {buyers.map((b) => (
+              <option key={b} value={b}>
+                {b}
+              </option>
+            ))}
           </select>
         </div>
       </div>
@@ -285,51 +544,60 @@ export default function InspectionHistory({ user, section = "washing", lineIds =
       {state.loading && all.length === 0 ? (
         <p className="hs-empty">Loading…</p>
       ) : state.error ? (
-        <p className="hs-empty" role="alert">{state.error}</p>
+        <p className="hs-empty" role="alert">
+          {state.error}
+        </p>
       ) : rows.length === 0 ? (
         <p className="hs-empty">No matching history found.</p>
       ) : (
         <>
           <ul className="hs-list">
             {rows.slice(0, shown).map((c) => (
-              <li key={c.key} className="hs-card">
+              <li
+                key={c.key}
+                className="hs-card click"
+                role="button"
+                tabIndex={0}
+                aria-label={`Open detail ${c.id}`}
+                onClick={() => setDetailKey(c.key)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setDetailKey(c.key);
+                  }
+                }}
+              >
                 <span className="hs-id">{c.id}</span>
                 <span className="hs-badges">
                   {c.edited && <span className="hs-badge edited">Edited</span>}
                   <span className="hs-badge buyer">{c.buyer}</span>
                 </span>
-                <span className="hs-meta">{c.label} - {c.time}</span>
-                <span className="hs-meta r">{c.style} - {c.qty} pcs</span>
-                <button type="button" className="hs-edit" onClick={() => setEditing(c)}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                       strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M12 20h9" />
-                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                  </svg>
-                  Edit
-                </button>
+                <span className="hs-meta">
+                  {c.label} - {c.time}
+                </span>
+                <span className="hs-meta r">
+                  {c.style} - {c.qty} pcs
+                </span>
               </li>
             ))}
           </ul>
           {shown < rows.length && (
-            <button type="button" className="hs-more" onClick={() => setShown((n) => n + PAGE)}>
+            <button
+              type="button"
+              className="hs-more"
+              onClick={() => setShown((n) => n + PAGE)}
+            >
               Show more ({rows.length - shown})
             </button>
           )}
         </>
       )}
 
-      {editing && (
-        <EditSheet
-          section={section}
-          item={editing}
-          lineIds={lineIds}
-          defectNames={defectNames}
-          onClose={() => setEditing(null)}
-          onSave={saveEdit}
-        />
+      {toast && (
+        <div className="hs-toast" role="status">
+          {toast}
+        </div>
       )}
-      {toast && <div className="hs-toast" role="status">{toast}</div>}
     </main>
   );
 }

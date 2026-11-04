@@ -11,6 +11,32 @@ export function fetchInspectionDaily(section, date, signal) {
   return apiFetch(`${base}/daily?${q}`, { signal });
 }
 
+const normName = (s) => String(s ?? "").trim().toUpperCase().replace(/\s+/g, " ");
+const catOf = (d) => d.category ?? d.categoryName ?? d.defectCategory ?? "";
+const niceCat = (c) =>
+  String(c).replace(/^DEFECT_/, "").replace(/_/g, " ").toLowerCase()
+    .replace(/^\w/, (x) => x.toUpperCase());
+
+// Gabungkan defect bernama sama (area berbeda), lalu ambil teratas.
+// "OTHER" tetap terpisah per kategori.
+const topByName = (list, limit) => {
+  const m = new Map();
+  list.forEach((d) => {
+    const name = String(d.defectTypeName ?? "").trim();
+    if (!name || !(d.totalDefects > 0)) return;
+    const isOther = normName(name) === "OTHER" || normName(name) === "OTHERS";
+    const cat = isOther ? catOf(d) : "";
+    const key = `${normName(name)}|${cat}`;
+    const cur = m.get(key) ?? {
+      name: isOther && cat ? `${name} (${niceCat(cat)})` : name,
+      count: 0,
+    };
+    cur.count += d.totalDefects;
+    m.set(key, cur);
+  });
+  return [...m.values()].sort((a, b) => b.count - a.count).slice(0, limit);
+};
+
 // laporan backend -> bentuk dashboard admin: { overview, lines, topDefects }
 export function adaptInspectionDay(rep) {
   const insp = rep?.totalQuantityInspect ?? 0;
@@ -30,11 +56,7 @@ export function adaptInspectionDay(rep) {
           ? Math.round(100 - (l.totalDefects / l.totalQuantityInspect) * 100)
           : 0,
       })),
-    topDefects: (rep?.defectSummaries ?? [])
-      .filter((d) => d.totalDefects > 0)
-      .slice(0, 3)
-      .map((d) =>
-        ({ name: d.defectTypeName, count: d.totalDefects })),
+    topDefects: topByName(rep?.defectSummaries ?? [], 3),
     washingTypes: (rep?.washingTypeSummaries ?? []).map((w) => ({
       name: w.washingType === "BULK" ? "Bulk" : "Repair",
       inspections: w.totalInspections,

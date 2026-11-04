@@ -2,7 +2,16 @@ import { useEffect, useState } from "react";
 import { apiFetch } from "./client.js";
 import { hourLabel } from "../config/sections.js";
 
-const BASE = "/user/inspections";
+import { loadSession } from "../auth/session.js";
+
+const base = () => {
+  const role = loadSession()?.user?.role;
+  return role === "super_admin"
+    ? "/super-admin/inspections"
+    : role === "admin"
+      ? "/admin/inspections"
+      : "/user/inspections";
+};
 
 export const SECTION_ENUM = {
   sewing: "SEWING",
@@ -32,7 +41,7 @@ const localISO = (d) =>
 /* ---------- daftar defect type dari database (diambil sekali) ---------- */
 let defectCache = null;
 export const loadDefectTypes = () =>
-(defectCache ??= apiFetch(`${BASE}/defects/search`)
+(defectCache ??= apiFetch(`${base()}/defects/search`)
   .then((d) => (Array.isArray(d) ? d : []))
   .catch((e) => {
     defectCache = null;
@@ -85,7 +94,7 @@ export async function createInspection(section, job) {
   if (transfer > inspect)
     throw new Error("Transfer cannot exceed QTY inspect.");
 
-  return apiFetch(BASE, {
+  return apiFetch("/user/inspections", {
     method: "POST",
     body: {
       buyerName: job.buyer,
@@ -106,12 +115,15 @@ export async function createInspection(section, job) {
 }
 
 export const fetchMyInspections = (section, signal) =>
-  apiFetch(`${BASE}/all?section=${SECTION_ENUM[section]}`, { signal }).then((d) =>
+  apiFetch(`${base()}/all?section=${SECTION_ENUM[section]}`, { signal }).then((d) =>
     Array.isArray(d) ? d : []
   );
 
 export const updateInspection = (id, body) =>
-  apiFetch(`${BASE}/${id}`, { method: "PUT", body });
+  apiFetch(`${base()}/${id}`, { method: "PUT", body });
+
+export const deleteInspection = (id) =>
+  apiFetch(`${base()}/${id}`, { method: "DELETE" });
 
 /* ---------- daftar milik user yang login ---------- */
 export function useInspections(section, enabled) {
@@ -121,7 +133,7 @@ export function useInspections(section, enabled) {
     if (!enabled) return;
     const ctrl = new AbortController();
     setState((s) => ({ ...s, loading: true, error: "" }));
-    apiFetch(`${BASE}/all?section=${SECTION_ENUM[section]}`, { signal: ctrl.signal })
+    apiFetch(`${base()}/all?section=${SECTION_ENUM[section]}`, { signal: ctrl.signal })
       .then((data) =>
         setState({ list: Array.isArray(data) ? data : [], loading: false, error: "" })
       )

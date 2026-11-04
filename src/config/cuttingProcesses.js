@@ -9,7 +9,7 @@ export const CUTTING_PROCESSES = [
     key: "marker",
     label: "MARKER",
     defects: [
-      "Overlaping", "Not clear print", "Pattern not same",
+      "Overlapping", "Not clear print", "Pattern not same",
       "Wrong qty", "No Allowance/Matching", "Other",
     ],
   },
@@ -30,7 +30,7 @@ export const CUTTING_PROCESSES = [
     key: "cutting",
     label: "CUTTING",
     defects: [
-      "Smaller from patter", "Bigger from pattern", "No notch",
+      "Smaller from pattern", "Bigger from pattern", "No notch",
       "Wrong Notch", "Notch to Deep", "Other",
     ],
   },

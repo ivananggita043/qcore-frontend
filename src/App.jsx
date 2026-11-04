@@ -167,7 +167,7 @@ function buildFinalResult(data) {
 }
 
 // section yang History-nya sudah dari backend (tambahkan sewing/finishing/packing nanti)
-     const LIVE_HISTORY = ["washing", "finishing", "packing", "sewing"];
+const LIVE_HISTORY = ["sewing", "washing", "finishing", "packing"];
 
 export default function App() {
   const [screen, setScreen] = useState("splash");
@@ -286,6 +286,8 @@ export default function App() {
     if (key === "profile") return setScreen("profile");
     if (key === "reports") return setScreen("reports");
     if (key === "users") return setScreen("users");
+    if (key === "history" && LIVE_HISTORY.includes(section))
+      return setScreen("history");
     if (key === "records") return setScreen("records");
     if (key === "stats") return setScreen("stats");
     if (key === "home") {
@@ -366,6 +368,7 @@ export default function App() {
           user={user}
           section={section}
           lineIds={su?.lineIds ?? []}
+          isAdmin={isAdmin}
           onBack={() => setScreen("dashboard")}
         />
       );
