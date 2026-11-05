@@ -251,6 +251,20 @@ function buyerRaw(sections, iso) {
 
 const rateOf = (d, i) => (i ? +((d / i) * 100).toFixed(1) : 0);
 
+// top 3 defect satu style (data tiruan, stabil untuk tanggal yang sama)
+function styleTopDefects(sections, iso, buyer, style, defects) {
+  if (!defects) return [];
+  const names = [...new Set(sections.flatMap((s) => DEFECTS[s] ?? []))];
+  const r = rng(`${iso}:${buyer}:${style}:defects`);
+  const w = names.map(() => r() ** 2 + 0.05);
+  const total = w.reduce((a, b) => a + b, 0) || 1;
+  return names
+    .map((name, i) => ({ name, count: Math.round((w[i] / total) * defects) }))
+    .filter((d) => d.count > 0)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3);
+}
+
 // Hasil: [{ name, inspections, defects, rate, delta, styles: [{ name, inspections, defects, rate, delta }] }]
 // rate = defect rate (%), delta = selisih poin vs hari sebelumnya (positif = memburuk)
 export function buyerPerformance(sections, iso) {
@@ -275,6 +289,7 @@ export function buyerPerformance(sections, iso) {
           inspections: x.inspections,
           defects: x.defects,
           rate,
+          topDefects: styleTopDefects(sections, iso, x.buyer, x.style, x.defects),
           delta: y && y.inspections ? +(rate - rateOf(y.defects, y.inspections)).toFixed(1) : 0,
         };
       });

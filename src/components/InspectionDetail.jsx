@@ -167,7 +167,6 @@ export default function InspectionDetail({
             </svg>
           </button>
           <h1 className="idt-title">Result Detail</h1>
-          {c.edited && <span className="idt-edited">Edited</span>}
         </header>
 
         <div className="idt-grid">

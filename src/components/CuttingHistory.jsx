@@ -352,7 +352,7 @@ export default function CuttingHistory({ user, isAdmin = false, onBack }) {
       (r) =>
         (buyer === "all" || r.buyers.includes(buyer)) &&
         (!q ||
-          `${r.search} ${r.label} ${r.time} ${r.status} ${r.edited ? "edited" : ""}`
+            `${r.search} ${r.label} ${r.time} ${r.status}`
             .toLowerCase()
             .includes(q)),
     );
@@ -528,7 +528,6 @@ export default function CuttingHistory({ user, isAdmin = false, onBack }) {
               >
                 <span className="hs-id">{c.id}</span>
                 <span className="hs-badges">
-                  {c.edited && <span className="hs-badge edited">Edited</span>}
                   <span className="hs-badge buyer">{c.buyer}</span>
                 </span>
                 <span className="hs-meta">

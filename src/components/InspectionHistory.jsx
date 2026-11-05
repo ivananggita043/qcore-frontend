@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   PREFIX,
+  SECTION_ENUM,
   deleteInspection,
   fetchMyInspections,
   loadDefectTypes,
@@ -119,8 +120,15 @@ function toRow(section, x) {
   };
 }
 
+const niceCat = (c) =>
+  String(c ?? "")
+    .replace(/^DEFECT_/, "")
+    .replace(/_/g, " ");
+const defectLabel = (t) =>
+  t ? `${t.areaName || niceCat(t.category)} · ${t.name}` : "Defect";
+
 // nilai form -> body PUT (defect dikirim ulang apa adanya)
-function toBody(section, row, v, lineId) {
+function toBody(section, row, v, lineId, defects) {
   const body = {
     buyerName: v.buyer,
     styleCode: v.style,
@@ -132,9 +140,9 @@ function toBody(section, row, v, lineId) {
         ? Number(v.transfer)
         : row.transfer,
     comment: v.comment || null,
-    defects: (row.raw.defects ?? []).map((d) => ({
+    defects: (defects ?? row.raw.defects ?? []).map((d) => ({
       defectTypeId: d.defectTypeId,
-      quantity: d.quantity,
+      quantity: Number(d.quantity),
     })),
   };
   if (row.slot) body.inspectionTimeSlot = row.slot;
@@ -155,6 +163,7 @@ function EditSheet({
   lineIds,
   lineIdOf,
   defectNames,
+  defectTypes,
   onClose,
   onSave,
 }) {
@@ -164,6 +173,52 @@ function EditSheet({
   );
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+  const [defs, setDefs] = useState(() =>
+    (item.raw.defects ?? []).map((d) => ({
+      defectTypeId: d.defectTypeId,
+      quantity: String(d.quantity),
+    })),
+  );
+  const [dq, setDq] = useState("");
+
+  const setQty = (id, val) =>
+    setDefs((l) =>
+      l.map((d) =>
+        d.defectTypeId === id ? { ...d, quantity: val.replace(/\D/g, "") } : d,
+      ),
+    );
+  const removeDef = (id) => {
+    setDefs((l) => l.filter((d) => d.defectTypeId !== id));
+    setErr("");
+  };
+  const addDef = (id) => {
+    if (!id) return;
+    setDefs((l) => [...l, { defectTypeId: id, quantity: "1" }]);
+    setDq("");
+    setErr("");
+  };
+
+  // defect yang masih bisa ditambahkan, dikelompokkan per area/kategori
+  const groups = useMemo(() => {
+    const used = new Set(defs.map((d) => d.defectTypeId));
+    const sec = SECTION_ENUM[section];
+    const q = dq.trim().toLowerCase();
+    const m = new Map();
+    Object.values(defectTypes ?? {})
+      .filter((t) => t.section === sec && !used.has(t.id))
+      .forEach((t) => {
+        const g = t.areaName || niceCat(t.category);
+        if (q && !`${t.name} ${g}`.toLowerCase().includes(q)) return;
+        if (!m.has(g)) m.set(g, []);
+        m.get(g).push(t);
+      });
+    return [...m.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([name, list]) => ({
+        name,
+        list: list.sort((a, b) => a.name.localeCompare(b.name)),
+      }));
+  }, [defectTypes, defs, section, dq]);
 
   const set = (k, val) => {
     setV((o) => ({ ...o, [k]: val }));
@@ -183,13 +238,16 @@ function EditSheet({
       }
     }
     const qty = Number(v.qty);
-    const totalDefect = (item.raw.defects ?? []).reduce(
-      (s, d) => s + d.quantity,
-      0,
-    );
+    for (const d of defs) {
+      if (!(Number(d.quantity) >= 1))
+        return setErr(
+          `${defectLabel(defectTypes?.[d.defectTypeId])}: quantity must be at least 1.`,
+        );
+    }
+    const totalDefect = defs.reduce((s, d) => s + Number(d.quantity), 0);
     if (totalDefect > qty)
       return setErr(
-        `Inspected qty cannot be less than the recorded defects (${totalDefect}).`,
+        `Total defects (${totalDefect}) cannot be greater than inspected qty (${qty}).`,
       );
     if (
       (section === "sewing" || section === "finishing") &&
@@ -208,14 +266,12 @@ function EditSheet({
     );
     setBusy(true);
     try {
-      await onSave(toBody(section, item, clean, lineId));
+      await onSave(toBody(section, item, clean, lineId, defs));
     } catch (e) {
       setErr(e?.message || "Failed to save. Please try again.");
       setBusy(false);
     }
   };
-
-  const defects = item.raw.defects ?? [];
 
   return (
     <div className="hs-overlay" onClick={onClose}>
@@ -279,18 +335,80 @@ function EditSheet({
         ))}
 
         <div className="hs-field">
-          <span>Defects (read only)</span>
-          {defects.length === 0 ? (
-            <p className="hs-meta">No defects recorded.</p>
-          ) : (
-            <ul style={{ margin: 0, paddingLeft: 18, fontSize: 16 }}>
-              {defects.map((d) => (
-                <li key={d.id ?? d.defectTypeId}>
-                  {defectNames[d.defectTypeId] ?? "Defect"} ×{d.quantity}
-                </li>
-              ))}
-            </ul>
+          <span>
+            Defects (total{" "}
+            {defs.reduce((s, d) => s + Number(d.quantity || 0), 0)})
+          </span>
+
+          {defs.length === 0 && (
+            <p className="hs-meta">No defects. Add one below if needed.</p>
           )}
+
+          <ul className="hs-defs">
+            {defs.map((d) => (
+              <li key={d.defectTypeId} className="hs-def">
+                <span className="hs-def-name">
+                  {defectLabel(defectTypes?.[d.defectTypeId]) === "Defect" &&
+                  defectNames[d.defectTypeId]
+                    ? defectNames[d.defectTypeId]
+                    : defectLabel(defectTypes?.[d.defectTypeId])}
+                </span>
+                <input
+                  className="hs-def-qty"
+                  inputMode="numeric"
+                  aria-label="Defect quantity"
+                  value={d.quantity}
+                  onChange={(e) => setQty(d.defectTypeId, e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="hs-def-del"
+                  aria-label="Remove defect"
+                  onClick={() => removeDef(d.defectTypeId)}
+                >
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          <input
+            type="search"
+            className="hs-def-search"
+            placeholder="Search defect to add…"
+            aria-label="Search defect to add"
+            autoComplete="off"
+            value={dq}
+            onChange={(e) => setDq(e.target.value)}
+          />
+
+          {dq.trim() &&
+            (groups.length === 0 ? (
+              <p className="hs-meta">No matching defect found.</p>
+            ) : (
+              <div
+                className="hs-def-results"
+                role="listbox"
+                aria-label="Defect results"
+              >
+                {groups.map((g) => (
+                  <div key={g.name}>
+                    <p className="hs-def-group">{g.name}</p>
+                    {g.list.map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        role="option"
+                        className="hs-def-opt"
+                        onClick={() => addDef(t.id)}
+                      >
+                        + {t.name}
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            ))}
         </div>
 
         {err && (
@@ -387,7 +505,7 @@ export default function InspectionHistory({
         (!from || day >= from) &&
         (!to || day <= to) &&
         (!q ||
-          `${c.id} ${c.buyer} ${c.style} ${c.color} ${c.label} ${c.time} ${c.by} ${c.lineName} ${c.edited ? "edited" : ""}`
+          `${c.id} ${c.buyer} ${c.style} ${c.color} ${c.label} ${c.time} ${c.by} ${c.lineName}`
             .toLowerCase()
             .includes(q))
       );
@@ -483,6 +601,7 @@ export default function InspectionHistory({
             defectNames={defectNames}
             onClose={() => setEditing(null)}
             onSave={saveEdit}
+            defectTypes={defectTypes}
           />
         )}
         {toast && (
@@ -644,8 +763,7 @@ export default function InspectionHistory({
                 }}
               >
                 <span className="hs-id">{c.id}</span>
-                <span className="hs-badges">
-                  {c.edited && <span className="hs-badge edited">Edited</span>}
+                <span className="hs-badges">                  
                   <span className="hs-badge buyer">{c.buyer}</span>
                 </span>
                 <span className="hs-meta">

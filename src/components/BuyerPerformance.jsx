@@ -2,17 +2,25 @@ import { useMemo, useState } from "react";
 import { buyerPerformance } from "../mock/dashboardData.js";
 import "./BuyerPerformance.css";
 
-const NAMES = { cutting: "Cutting", sewing: "Sewing", washing: "Washing", finishing: "Finishing", packing: "Packing", final: "Final" };
+const NAMES = {
+  cutting: "Cutting",
+  sewing: "Sewing",
+  washing: "Washing",
+  finishing: "Finishing",
+  packing: "Packing",
+  final: "Final",
+};
 const LIMIT = 5;
 
 // defect rate: makin kecil makin baik
 const level = (r) => (r <= 5 ? "good" : r <= 10 ? "warn" : "bad");
-const fmt = (n) => Number(n).toLocaleString("id-ID", { maximumFractionDigits: 1 });
+const fmt = (n) =>
+  Number(n).toLocaleString("id-ID", { maximumFractionDigits: 1 });
 const num = (n) => Number(n).toLocaleString("id-ID");
 
 const SORTS = {
-  worst:  (a, b) => b.rate - a.rate || b.inspections - a.inspections,
-  best:   (a, b) => a.rate - b.rate || b.inspections - a.inspections,
+  worst: (a, b) => b.rate - a.rate || b.inspections - a.inspections,
+  best: (a, b) => a.rate - b.rate || b.inspections - a.inspections,
   volume: (a, b) => b.inspections - a.inspections,
 };
 
@@ -24,7 +32,10 @@ export default function BuyerPerformance({ sections, date }) {
   const [showAll, setShowAll] = useState(false);
 
   const secs = scope === "all" ? sections : [scope];
-  const buyers = useMemo(() => buyerPerformance(secs, date), [secs.join(), date]);
+  const buyers = useMemo(
+    () => buyerPerformance(secs, date),
+    [secs.join(), date],
+  );
 
   const rows = useMemo(() => {
     const list =
@@ -37,7 +48,10 @@ export default function BuyerPerformance({ sections, date }) {
   const max = Math.max(1, ...rows.map((r) => r.rate));
   const shown = showAll ? rows : rows.slice(0, LIMIT);
 
-  const reset = () => { setOpen(null); setShowAll(false); };
+  const reset = () => {
+    setOpen(null);
+    setShowAll(false);
+  };
 
   return (
     <section className="card bp">
@@ -53,7 +67,10 @@ export default function BuyerPerformance({ sections, date }) {
               role="tab"
               aria-selected={scope === k}
               className={`bp-chip ${scope === k ? "on" : ""}`}
-              onClick={() => { setScope(k); reset(); }}
+              onClick={() => {
+                setScope(k);
+                reset();
+              }}
             >
               {k === "all" ? "All" : NAMES[k]}
             </button>
@@ -62,14 +79,20 @@ export default function BuyerPerformance({ sections, date }) {
       )}
 
       <div className="bp-tabs" role="tablist" aria-label="Group">
-        {[["buyer", "Buyer"], ["style", "Style"]].map(([k, l]) => (
+        {[
+          ["buyer", "Buyer"],
+          ["style", "Style"],
+        ].map(([k, l]) => (
           <button
             key={k}
             type="button"
             role="tab"
             aria-selected={tab === k}
             className={tab === k ? "on" : ""}
-            onClick={() => { setTab(k); reset(); }}
+            onClick={() => {
+              setTab(k);
+              reset();
+            }}
           >
             {l}
           </button>
@@ -80,7 +103,10 @@ export default function BuyerPerformance({ sections, date }) {
         className="bp-sort"
         value={sort}
         aria-label="Sort"
-        onChange={(e) => { setSort(e.target.value); reset(); }}
+        onChange={(e) => {
+          setSort(e.target.value);
+          reset();
+        }}
       >
         <option value="worst">Highest defect rate first</option>
         <option value="best">Lowest defect rate first</option>
@@ -122,11 +148,17 @@ export default function BuyerPerformance({ sections, date }) {
           </ul>
 
           {rows.length > LIMIT && (
-            <button type="button" className="bp-more" onClick={() => setShowAll((v) => !v)}>
+            <button
+              type="button"
+              className="bp-more"
+              onClick={() => setShowAll((v) => !v)}
+            >
               {showAll ? "Show less" : `View all (${rows.length})`}
             </button>
           )}
-          <p className="bp-legend">Defect rate: green ≤ 5% · orange 5–10% · red &gt; 10%</p>
+          <p className="bp-legend">
+            Defect rate: green ≤ 5% · orange 5–10% · red &gt; 10%
+          </p>
         </>
       )}
     </section>
@@ -140,7 +172,10 @@ function Row({ rank, r, sub, max, expandable, open, onToggle, small }) {
     : {};
   const up = r.delta > 0;
   return (
-    <Tag className={`bp-row ${level(r.rate)} ${small ? "small" : ""}`} {...props}>
+    <Tag
+      className={`bp-row ${level(r.rate)} ${small ? "small" : ""}`}
+      {...props}
+    >
       <span className="rank">{rank}</span>
       <span className="main">
         <span className="top">
@@ -150,23 +185,53 @@ function Row({ rank, r, sub, max, expandable, open, onToggle, small }) {
           </span>
           <strong>{fmt(r.rate)}%</strong>
         </span>
-        <span className="bar" role="img" aria-label={`${r.name} defect rate ${fmt(r.rate)} percent`}>
+        <span
+          className="bar"
+          role="img"
+          aria-label={`${r.name} defect rate ${fmt(r.rate)} percent`}
+        >
           <i style={{ width: `${Math.max(4, (r.rate / max) * 100)}%` }} />
         </span>
         <span className="meta">
-          <span>{num(r.inspections)} inspections · {num(r.defects)} defects</span>
+          <span>
+            {num(r.inspections)} inspections · {num(r.defects)} defects
+          </span>
           {r.delta !== 0 && (
             <span className={up ? "worse" : "better"}>
               {up ? "↑" : "↓"} {fmt(Math.abs(r.delta))} points
             </span>
           )}
         </span>
+        {r.topDefects?.length > 0 && (
+          <span className="tops">
+            <span className="tops-title">Top 3 defects</span>
+            {r.topDefects.map((d, i) => (
+              <span key={d.name} className="tops-item">
+                <b>{i + 1}</b>
+                <span>{d.name}</span>
+                <em>{num(d.count)}</em>
+              </span>
+            ))}
+          </span>
+        )}
       </span>
       {expandable && (
-        <svg className="chev" width="14" height="9" viewBox="0 0 14 9" fill="none" aria-hidden="true"
-             style={{ transform: open ? "rotate(180deg)" : "none" }}>
-          <path d="m1 1.5 6 6 6-6" stroke="currentColor" strokeWidth="1.8"
-                strokeLinecap="round" strokeLinejoin="round" />
+        <svg
+          className="chev"
+          width="14"
+          height="9"
+          viewBox="0 0 14 9"
+          fill="none"
+          aria-hidden="true"
+          style={{ transform: open ? "rotate(180deg)" : "none" }}
+        >
+          <path
+            d="m1 1.5 6 6 6-6"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
       )}
     </Tag>
