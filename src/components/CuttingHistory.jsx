@@ -226,10 +226,7 @@ function EditSheet({ row, onClose, onSave }) {
                     value={it[k]}
                     onChange={(e) =>
                       upd(n, {
-                        [k]:
-                          k === "style"
-                            ? e.target.value.toUpperCase()
-                            : e.target.value,
+                        [k]: e.target.value.toUpperCase(),
                       })
                     }
                   />

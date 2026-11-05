@@ -121,7 +121,7 @@ export default function FinalCheck({ onBack, onFinish }) {
               <span>Buyer</span>
               <input
                 value={f.buyer}
-                onChange={set("buyer")}
+               onChange={setUpper("buyer")}
                 autoComplete="off"
                 placeholder="e.g. Calvin Klein"
               />
@@ -141,7 +141,7 @@ export default function FinalCheck({ onBack, onFinish }) {
               <span>PO number</span>
               <input
                 value={f.po}
-                onChange={set("po")}
+                onChange={setUpper("po")}
                 autoComplete="off"
                 placeholder="e.g. PO-88421"
               />
@@ -151,7 +151,7 @@ export default function FinalCheck({ onBack, onFinish }) {
               <span>Color</span>
               <input
                 value={f.color}
-                onChange={set("color")}
+                onChange={setUpper("color")}
                 autoComplete="off"
                 placeholder="Optional"
               />

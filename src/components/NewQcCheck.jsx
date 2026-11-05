@@ -47,6 +47,8 @@ export default function NewQcCheck({
     cartons: "",
   });
 
+  const UPPER = ["buyer", "style", "color"];
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     const numeric = ["inspect", "transfer", "cartons"].includes(name);
@@ -54,7 +56,7 @@ export default function NewQcCheck({
       ...v,
       [name]: numeric
         ? value.replace(/\D/g, "")
-        : name === "style"
+        : UPPER.includes(name)
           ? value.toUpperCase()
           : value,
     }));
@@ -180,7 +182,10 @@ export default function NewQcCheck({
                 maxLength={50}
                 value={wash.handfeel}
                 onChange={(e) =>
-                  setWash((w) => ({ ...w, handfeel: e.target.value }))
+                  setWash((w) => ({
+                    ...w,
+                    handfeel: e.target.value.toUpperCase(),
+                  }))
                 }
                 autoComplete="off"
                 required
@@ -194,7 +199,7 @@ export default function NewQcCheck({
                 maxLength={50}
                 value={wash.grade}
                 onChange={(e) =>
-                  setWash((w) => ({ ...w, grade: e.target.value }))
+                  setWash((w) => ({ ...w, grade: e.target.value.toUpperCase() }))
                 }
                 autoComplete="off"
                 required

@@ -127,10 +127,12 @@ export default function CuttingCheck({ onBack, onFinish, lineIds = [] }) {
 
   const onDigits = (i, field) => (e) =>
     upd(i, { [field]: e.target.value.replace(/\D/g, "") });
+  const UPPER = ["buyer", "style", "color", "lot", "operator"];
   const onText = (i, field) => (e) =>
     upd(i, {
-      [field]:
-        field === "style" ? e.target.value.toUpperCase() : e.target.value,
+      [field]: UPPER.includes(field)
+        ? e.target.value.toUpperCase()
+        : e.target.value,
     });
   const toggleDefect = (i, id) =>
     upd(i, (s) => ({ defectTypes: s.defectTypes[0] === id ? [] : [id] }));

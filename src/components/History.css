@@ -257,3 +257,33 @@
   background: #e5e5e5;
   color: #3748a1;
 }
+.hs-dates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 0 0 18px;
+}
+.hs-date { display: grid; gap: 4px; font-size: 15px; color: #444; }
+.hs-date input {
+  height: 48px;
+  padding: 0 12px;
+  border: 1px solid #888787;
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+  font-size: 16px;
+  color: #000;
+}
+.hs-date input:focus-visible { outline: 2px solid #3748a1; outline-offset: 2px; }
+.hs-date-clear {
+  grid-column: 1 / -1;
+  min-height: 48px;
+  border: 1.5px solid #3748a1;
+  border-radius: 10px;
+  background: #fff;
+  color: #3748a1;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}

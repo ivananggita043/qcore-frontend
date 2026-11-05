@@ -25,6 +25,11 @@ const SHORT = [
   "Dec",
 ];
 const pad = (n) => String(n).padStart(2, "0");
+// tanggal lokal "YYYY-MM-DD" dari timestamp
+const isoOf = (ts) => {
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
 const PAGE = 30;
 
 /* ---------- field yang bisa diedit per section ---------- */
@@ -257,7 +262,13 @@ function EditSheet({
                     f.k,
                     f.type === "number"
                       ? e.target.value.replace(/\D/g, "")
-                      : f.k === "style"
+                      : [
+                            "buyer",
+                            "style",
+                            "color",
+                            "handfeel",
+                            "grade",
+                          ].includes(f.k)
                         ? e.target.value.toUpperCase()
                         : e.target.value,
                   )
@@ -326,6 +337,8 @@ export default function InspectionHistory({
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("recent");
   const [buyer, setBuyer] = useState("all");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
   const [shown, setShown] = useState(PAGE);
   const [editing, setEditing] = useState(null);
   const [toast, setToast] = useState("");
@@ -367,17 +380,21 @@ export default function InspectionHistory({
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
-    let list = all.filter(
-      (c) =>
+    let list = all.filter((c) => {
+      const day = isoOf(c.ts);
+      return (
         (buyer === "all" || c.buyer === buyer) &&
+        (!from || day >= from) &&
+        (!to || day <= to) &&
         (!q ||
           `${c.id} ${c.buyer} ${c.style} ${c.color} ${c.label} ${c.time} ${c.by} ${c.lineName} ${c.edited ? "edited" : ""}`
             .toLowerCase()
-            .includes(q)),
-    );
+            .includes(q))
+      );
+    });
     if (sort === "oldest") list = [...list].reverse();
     return list;
-  }, [all, query, buyer, sort]);
+  }, [all, query, buyer, sort, from, to]);
 
   const detail = detailKey ? all.find((c) => c.key === detailKey) : null;
   const defectNames = useMemo(
@@ -557,6 +574,47 @@ export default function InspectionHistory({
             ))}
           </select>
         </div>
+        {isAdmin && (
+          <div className="hs-dates">
+            <label className="hs-date">
+              <span>From</span>
+              <input
+                type="date"
+                value={from}
+                max={to || undefined}
+                onChange={(e) => {
+                  setFrom(e.target.value);
+                  setShown(PAGE);
+                }}
+              />
+            </label>
+            <label className="hs-date">
+              <span>To</span>
+              <input
+                type="date"
+                value={to}
+                min={from || undefined}
+                onChange={(e) => {
+                  setTo(e.target.value);
+                  setShown(PAGE);
+                }}
+              />
+            </label>
+            {(from || to) && (
+              <button
+                type="button"
+                className="hs-date-clear"
+                onClick={() => {
+                  setFrom("");
+                  setTo("");
+                  setShown(PAGE);
+                }}
+              >
+                Clear dates
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {state.loading && all.length === 0 ? (
