@@ -89,14 +89,18 @@
 
 .forgot {
   display: block;
-  margin-top: -16px;
-  text-align: right;
-  font-size: 12px;
+  margin: -16px 0 0 auto;
+  padding: 8px 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 14px;
   line-height: 1.5;
   color: #0070a8;
-  text-decoration: none;
+  cursor: pointer;
 }
 .forgot:hover { text-decoration: underline; }
+.forgot:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
 
 .signin {
   display: block;
@@ -148,3 +152,50 @@
 .login-error { background: #fdecea; border: 1px solid #f5c2bd; color: #b42318; }
 .login-notice { background: #eef1fb; border: 1px solid #d6dcf3; color: var(--indigo); }
 .signin:disabled { opacity: 0.7; cursor: wait; filter: none; }
+
+.contact-link {
+  padding: 8px 2px;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: #0070a8;
+  cursor: pointer;
+}
+.contact-link:hover { text-decoration: underline; }
+.contact-link:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+
+/* pop-up */
+.lg-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(20, 22, 40, 0.55);
+}
+.lg-modal {
+  width: 100%;
+  max-width: 400px;
+  padding: 26px 22px 22px;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  text-align: center;
+}
+.lg-modal-title { margin: 0 0 10px; font-size: 22px; font-weight: 600; color: var(--indigo); }
+.lg-modal-text { margin: 0 0 22px; font-size: 17px; line-height: 1.5; color: #262323; }
+.lg-modal-btn {
+  width: 100%;
+  min-height: 56px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--indigo);
+  color: #fff;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.lg-modal-btn:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; }

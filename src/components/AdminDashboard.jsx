@@ -8,7 +8,10 @@ import "./AdminDashboard.css";
 import BuyerPerformance from "./BuyerPerformance.jsx";
 import { useCuttingDay } from "../api/cutting.js";
 import "./StatsLineDefects.css";
-import { useInspectionDay } from "../api/inspectionReports.js";
+import {
+  useBuyerStyleDay,
+  useInspectionDay,
+} from "../api/inspectionReports.js";
 
 /* ---------- helper tanggal ---------- */
 const MONTHS = [
@@ -93,6 +96,7 @@ export default function AdminDashboard({
   const isLive = isCutting || isInsp;
   const liveCut = useCuttingDay(date, isCutting);
   const liveInsp = useInspectionDay(sec, date, isInsp);
+  const buyerStyle = useBuyerStyleDay(sec, date, isInsp);
   const live = isCutting ? liveCut : liveInsp;
   const mock = useMemo(() => adminDay(sec, date), [sec, date]);
   const {
@@ -324,7 +328,13 @@ export default function AdminDashboard({
             </ul>
           </>
         )}
-        {!isLive && <BuyerPerformance sections={[sec]} date={date} />}
+        {!isCutting && (
+          <BuyerPerformance
+            sections={[sec]}
+            date={date}
+            live={isInsp ? buyerStyle : undefined}
+          />
+        )}
       </div>
 
       <MenuDrawer

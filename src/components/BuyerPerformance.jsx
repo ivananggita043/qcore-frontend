@@ -24,7 +24,7 @@ const SORTS = {
   volume: (a, b) => b.inspections - a.inspections,
 };
 
-export default function BuyerPerformance({ sections, date }) {
+export default function BuyerPerformance({ sections, date, live }) {
   const [tab, setTab] = useState("buyer");
   const [sort, setSort] = useState("worst");
   const [scope, setScope] = useState("all");
@@ -33,8 +33,8 @@ export default function BuyerPerformance({ sections, date }) {
 
   const secs = scope === "all" ? sections : [scope];
   const buyers = useMemo(
-    () => buyerPerformance(secs, date),
-    [secs.join(), date],
+    () => (live ? (live.data ?? []) : buyerPerformance(secs, date)),
+    [live?.data, secs.join(), date],
   );
 
   const rows = useMemo(() => {
@@ -113,7 +113,13 @@ export default function BuyerPerformance({ sections, date }) {
         <option value="volume">Most inspections first</option>
       </select>
 
-      {rows.length === 0 ? (
+      {live?.loading ? (
+        <p className="bp-empty">Loading…</p>
+      ) : live?.error ? (
+        <p className="bp-empty" role="alert">
+          {live.error}
+        </p>
+      ) : rows.length === 0 ? (
         <p className="bp-empty">No data available for this date.</p>
       ) : (
         <>

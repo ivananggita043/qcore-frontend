@@ -113,8 +113,7 @@ function toRow(section, x) {
     edited: Boolean(x.updatedAt) && new Date(x.updatedAt) - t > 1000,
     by: x.submittedByName ?? "",
     lineName: x.lineName ?? "",
-    lineName: x.lineName ?? "",
-    by: x.submittedByName ?? "",
+
     totalDefect:
       x.totalDefect ?? (x.defects ?? []).reduce((a, d) => a + d.quantity, 0),
   };
@@ -173,6 +172,16 @@ function EditSheet({
   );
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    const onKey = (e) => e.key === "Escape" && !busy && onClose();
+    document.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [busy, onClose]);
   const [defs, setDefs] = useState(() =>
     (item.raw.defects ?? []).map((d) => ({
       defectTypeId: d.defectTypeId,
@@ -276,19 +285,35 @@ function EditSheet({
   return (
     <div className="hs-overlay" onClick={onClose}>
       <div
-        className="hs-sheet"
+        className="hs-sheet cols"
         role="dialog"
         aria-modal="true"
         aria-label="Edit check"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="hs-sheet-title">Edit {item.id}</h2>
-        <p className="hs-sheet-sub">
-          {section.toUpperCase()} - {item.label} - {item.time}
-        </p>
+        <div className="hs-sheet-head">
+          <div>
+            <h2 className="hs-sheet-title">Edit {item.id}</h2>
+            <p className="hs-sheet-sub">
+              {section.toUpperCase()} - {item.label} - {item.time}
+            </p>
+          </div>
+          <button
+            type="button"
+            className="hs-x"
+            aria-label="Close"
+            onClick={onClose}
+            disabled={busy}
+          >
+            ×
+          </button>
+        </div>
 
         {fields.map((f) => (
-          <label key={f.k} className="hs-field">
+          <label
+            key={f.k}
+            className={`hs-field ${f.type === "textarea" ? "wide" : ""}`}
+          >
             <span>
               {f.label}
               {f.required ? " *" : ""}
@@ -334,7 +359,7 @@ function EditSheet({
           </label>
         ))}
 
-        <div className="hs-field">
+        <div className="hs-field wide">
           <span>
             Defects (total{" "}
             {defs.reduce((s, d) => s + Number(d.quantity || 0), 0)})
@@ -521,8 +546,8 @@ export default function InspectionHistory({
     [defectTypes],
   );
 
-  // user biasa hanya boleh melihat data sewing; admin boleh edit semua
-  const canEdit = isAdmin || section !== "sewing";
+  // admin boleh edit semua; user hanya boleh melihat (sewing, washing, finishing, packing)
+  const canEdit = isAdmin;
 
   const norm = (s) =>
     String(s ?? "")
@@ -763,7 +788,7 @@ export default function InspectionHistory({
                 }}
               >
                 <span className="hs-id">{c.id}</span>
-                <span className="hs-badges">                  
+                <span className="hs-badges">
                   <span className="hs-badge buyer">{c.buyer}</span>
                 </span>
                 <span className="hs-meta">

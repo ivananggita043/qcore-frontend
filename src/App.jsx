@@ -170,7 +170,7 @@ function buildFinalResult(data) {
 }
 
 // section yang History-nya sudah dari backend (tambahkan sewing/finishing/packing nanti)
-const LIVE_HISTORY = ["sewing", "washing", "finishing", "packing"];
+const LIVE_HISTORY = ["cutting", "sewing", "washing", "finishing", "packing"];
 
 export default function App() {
   const [screen, setScreen] = useState("splash");
