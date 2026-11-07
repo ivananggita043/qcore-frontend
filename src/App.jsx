@@ -215,7 +215,11 @@ export default function App() {
       : isAdmin
         ? `${cfg.label.toUpperCase()} QC`
         : cfg.label.toUpperCase(),
-    line: su?.lineIds?.length ? `${su.lineIds.length} line` : "-",
+    line: su?.lineNames?.some(Boolean)
+      ? su.lineNames.join(", ")
+      : su?.lineIds?.length
+        ? `${su.lineIds.length} line`
+        : "-",
   };
 
   const handleLogout = useCallback((message = "") => {
@@ -370,7 +374,7 @@ export default function App() {
         <Page
           user={user}
           section={section}
-          lineIds={su?.lineIds ?? []}
+          lineNames={su?.lineNames ?? []}
           isAdmin={isAdmin}
           onBack={() => setScreen("dashboard")}
         />
@@ -408,7 +412,7 @@ export default function App() {
       return (
         <CuttingCheck
           onBack={() => setScreen("dashboard")}
-          lineIds={session?.user?.lineIds ?? []}
+          lineNames={session?.user?.lineNames ?? []}
           onFinish={(data) => {
             setResult(buildCuttingResult(data));
             setScreen("success");
@@ -458,6 +462,7 @@ export default function App() {
           withProcess={section === "finishing"}
           withCartons={section === "packing"}
           lineIds={su?.lineIds ?? []}
+          lineNames={su?.lineNames ?? []}
           onBack={() =>
             setScreen(section === "washing" ? "washingtype" : "dashboard")
           }

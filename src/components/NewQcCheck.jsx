@@ -29,6 +29,7 @@ export default function NewQcCheck({
   withProcess = false, // true untuk finishing
   withCartons = false, // true untuk packing
   lineIds = [], // dari session.user.lineIds
+  lineNames = [], // dari session.user.lineNames
   onBack,
   onStart,
 }) {
@@ -88,7 +89,7 @@ export default function NewQcCheck({
       inspect,
       transfer: withTransfer ? transfer : 0,
       lineId,
-      line: lineIds.length > 1 ? String(idx + 1) : "", // kosong = tidak ditampilkan
+      line: lineIds.length > 1 ? lineNames[idx] || String(idx + 1) : "", // kosong = tidak ditampilkan
       hour: hourly ? Number(hour) : null,
       handfeel: withWashing ? wash.handfeel.trim() : undefined,
       grade: withWashing ? wash.grade.trim() : undefined,
@@ -199,7 +200,10 @@ export default function NewQcCheck({
                 maxLength={50}
                 value={wash.grade}
                 onChange={(e) =>
-                  setWash((w) => ({ ...w, grade: e.target.value.toUpperCase() }))
+                  setWash((w) => ({
+                    ...w,
+                    grade: e.target.value.toUpperCase(),
+                  }))
                 }
                 autoComplete="off"
                 required
@@ -214,7 +218,7 @@ export default function NewQcCheck({
             <select value={lineId} onChange={(e) => setLineId(e.target.value)}>
               {lineIds.map((id, i) => (
                 <option key={id} value={id}>
-                  Line {i + 1}
+                  {lineNames[i] || `Line ${i + 1}`}
                 </option>
               ))}
             </select>

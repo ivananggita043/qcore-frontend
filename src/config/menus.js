@@ -1,7 +1,5 @@
 export const MENU_ADMIN = [
   { key: "home", label: "HOME", icon: "home" },
-  { key: "records", label: "QC RECORDS", icon: "records" },
-
   { key: "history", label: "ALL DATA", icon: "records" },
   { key: "stats", label: "STATISTIK", icon: "stats" },
   { key: "users", label: "USERS", icon: "users" },
@@ -11,7 +9,7 @@ export const MENU_ADMIN = [
 
 export const MENU_SUPER = [
   { key: "home", label: "HOME", icon: "home" },
-  { key: "records", label: "QC RECORDS", icon: "records" },
+  { key: "history", label: "ALL DATA", icon: "records" },
   { key: "stats", label: "STATISTIK", icon: "stats" },
   { key: "users", label: "USERS", icon: "users" },
   { key: "reports", label: "REPORT", icon: "report" },

@@ -32,6 +32,8 @@ export async function login(username, password) {
     throw e;
   }
 
+    // backend baru: lines [{id,name}]; tetap kompatibel dengan versi lama (lineIds)
+  const lines = data.lines ?? (data.lineIds ?? []).map((id) => ({ id, name: "" }));
   const session = {
     token: data.token,
     // token berlaku 1 jam di backend; dibaca dari token itu sendiri
@@ -43,7 +45,8 @@ export async function login(username, password) {
       role: String(data.role).toLowerCase(), // user | admin | super_admin
       section: data.section ? String(data.section).toLowerCase() : null,
       active: data.active,
-      lineIds: data.lineIds ?? [],
+      lineIds: lines.map((l) => l.id),
+      lineNames: lines.map((l) => l.name),
     },
   };
   saveSession(session);
