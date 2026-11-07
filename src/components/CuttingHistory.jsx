@@ -9,6 +9,7 @@ import {
 } from "../api/cutting.js";
 import "./History.css";
 import CuttingDetail from "./CuttingDetail.jsx";
+import Pager from "./Pager.jsx";
 
 const SHORT = [
   "Jan",
@@ -25,7 +26,6 @@ const SHORT = [
   "Dec",
 ];
 const pad = (n) => String(n).padStart(2, "0");
-const PAGE = 30;
 
 const LABEL = {
   MARKER: "Marker",
@@ -319,7 +319,8 @@ export default function CuttingHistory({ user, isAdmin = false, onBack }) {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("recent");
   const [buyer, setBuyer] = useState("all");
-  const [shown, setShown] = useState(PAGE);
+  const [page, setPage] = useState(1);
+  const [size, setSize] = useState(10);
   const [editing, setEditing] = useState(null);
   const [toast, setToast] = useState("");
   const [detailKey, setDetailKey] = useState(null);
@@ -352,7 +353,7 @@ export default function CuttingHistory({ user, isAdmin = false, onBack }) {
       (r) =>
         (buyer === "all" || r.buyers.includes(buyer)) &&
         (!q ||
-            `${r.search} ${r.label} ${r.time} ${r.status}`
+          `${r.search} ${r.label} ${r.time} ${r.status}`
             .toLowerCase()
             .includes(q)),
     );
@@ -466,7 +467,7 @@ export default function CuttingHistory({ user, isAdmin = false, onBack }) {
             aria-label="Search history"
             onChange={(e) => {
               setQuery(e.target.value);
-              setShown(PAGE);
+              setPage(1);
             }}
           />
         </label>
@@ -487,7 +488,7 @@ export default function CuttingHistory({ user, isAdmin = false, onBack }) {
             aria-label="Filter buyer"
             onChange={(e) => {
               setBuyer(e.target.value);
-              setShown(PAGE);
+              setPage(1);
             }}
           >
             <option value="all">All Buyers</option>
@@ -511,7 +512,7 @@ export default function CuttingHistory({ user, isAdmin = false, onBack }) {
       ) : (
         <>
           <ul className="hs-list">
-            {rows.slice(0, shown).map((c) => (
+            {rows.slice((page - 1) * size, page * size).map((c) => (
               <li
                 key={c.key}
                 className="hs-card click"
@@ -539,16 +540,16 @@ export default function CuttingHistory({ user, isAdmin = false, onBack }) {
               </li>
             ))}
           </ul>
-
-          {shown < rows.length && (
-            <button
-              type="button"
-              className="hs-more"
-              onClick={() => setShown((n) => n + PAGE)}
-            >
-              Show more ({rows.length - shown})
-            </button>
-          )}
+          <Pager
+            total={rows.length}
+            page={page}
+            size={size}
+            onPage={setPage}
+            onSize={(n) => {
+              setSize(n);
+              setPage(1);
+            }}
+          />
         </>
       )}
 

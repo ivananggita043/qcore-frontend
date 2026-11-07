@@ -10,6 +10,7 @@ import {
 import { fetchLines } from "../api/users.js";
 import InspectionDetail from "./InspectionDetail.jsx";
 import "./History.css";
+import Pager from "./Pager.jsx";
 
 const SHORT = [
   "Jan",
@@ -31,7 +32,6 @@ const isoOf = (ts) => {
   const d = new Date(ts);
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 };
-const PAGE = 30;
 
 /* ---------- field yang bisa diedit per section ---------- */
 const BASIC = [
@@ -482,7 +482,8 @@ export default function InspectionHistory({
   const [buyer, setBuyer] = useState("all");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-  const [shown, setShown] = useState(PAGE);
+  const [page, setPage] = useState(1);
+  const [size, setSize] = useState(10);
   const [editing, setEditing] = useState(null);
   const [toast, setToast] = useState("");
   const [lines, setLines] = useState([]);
@@ -687,7 +688,7 @@ export default function InspectionHistory({
             aria-label="Search history"
             onChange={(e) => {
               setQuery(e.target.value);
-              setShown(PAGE);
+              setPage(1);
             }}
           />
         </label>
@@ -707,7 +708,7 @@ export default function InspectionHistory({
             aria-label="Filter buyer"
             onChange={(e) => {
               setBuyer(e.target.value);
-              setShown(PAGE);
+              setPage(1);
             }}
           >
             <option value="all">All Buyers</option>
@@ -728,7 +729,7 @@ export default function InspectionHistory({
                 max={to || undefined}
                 onChange={(e) => {
                   setFrom(e.target.value);
-                  setShown(PAGE);
+                  setPage(1);
                 }}
               />
             </label>
@@ -740,7 +741,7 @@ export default function InspectionHistory({
                 min={from || undefined}
                 onChange={(e) => {
                   setTo(e.target.value);
-                  setShown(PAGE);
+                  setPage(1);
                 }}
               />
             </label>
@@ -751,7 +752,7 @@ export default function InspectionHistory({
                 onClick={() => {
                   setFrom("");
                   setTo("");
-                  setShown(PAGE);
+                  setPage(1);
                 }}
               >
                 Clear dates
@@ -772,7 +773,7 @@ export default function InspectionHistory({
       ) : (
         <>
           <ul className="hs-list">
-            {rows.slice(0, shown).map((c) => (
+            {rows.slice((page - 1) * size, page * size).map((c) => (
               <li
                 key={c.key}
                 className="hs-card click"
@@ -800,15 +801,16 @@ export default function InspectionHistory({
               </li>
             ))}
           </ul>
-          {shown < rows.length && (
-            <button
-              type="button"
-              className="hs-more"
-              onClick={() => setShown((n) => n + PAGE)}
-            >
-              Show more ({rows.length - shown})
-            </button>
-          )}
+          <Pager
+            total={rows.length}
+            page={page}
+            size={size}
+            onPage={setPage}
+            onSize={(n) => {
+              setSize(n);
+              setPage(1);
+            }}
+          />
         </>
       )}
 

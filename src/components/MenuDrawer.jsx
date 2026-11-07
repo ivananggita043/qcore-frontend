@@ -31,7 +31,7 @@ export default function MenuDrawer({
             <MenuIcon name="profile" size={32} />
           </div>
           <div className="drawer-who">
-            <p className="drawer-name">{user.code}</p>
+            <p className="drawer-name">{user.name}</p>
             <p className="drawer-area">{user.area}</p>
           </div>
           <button

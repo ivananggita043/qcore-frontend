@@ -60,7 +60,6 @@ const TODAY = toISO(new Date());
 
 const MENU = [
   { key: "home", label: "HOME", icon: "home" },
-  { key: "records", label: "QC RECORDS", icon: "records" },
   { key: "profile", label: "PROFILE", icon: "profile" },
 ];
 
@@ -126,7 +125,7 @@ export default function DashboardUser({
         <header className="dash-head">
           <div>
             <h1 className="dash-greeting">
-              Good day, <span className="code">{user.code}!</span>
+              Good day, <span className="code">{user.name}</span>
             </h1>
             <p className="dash-area">{user.area}</p>
           </div>
@@ -270,7 +269,7 @@ export default function DashboardUser({
             <MenuIcon name="profile" size={32} />
           </div>
           <div className="drawer-who">
-            <p className="drawer-name">{user.code}</p>
+            <p className="drawer-name">{user.name}</p>
             <p className="drawer-area">{user.area}</p>
           </div>
           <button

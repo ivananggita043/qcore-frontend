@@ -30,6 +30,9 @@ export default function Profile({ user, onBack }) {
     ...user,
     nik: nik === undefined ? "Loading…" : nik || user.nik || "-",
   };
+    // admin dan super admin tidak punya line
+  const isQc = data.role === "QC Line";
+  const details = DETAILS.filter((d) => d.key !== "line" || isQc);
 
   return (
     <main className="profile">
@@ -72,7 +75,7 @@ export default function Profile({ user, onBack }) {
         </section>
 
         <dl className="pf-card">
-          {DETAILS.map((d) => (
+          {details.map((d) => (
             <div key={d.key} className="pf-row">
               <dt>{d.label}</dt>
               <dd>{data[d.key]}</dd>
