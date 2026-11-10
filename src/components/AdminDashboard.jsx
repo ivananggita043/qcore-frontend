@@ -127,7 +127,8 @@ export default function AdminDashboard({
         <header className="dash-head">
           <div>
             <h1 className="dash-greeting">
-              {greeting()}, <span className="code">Admin!</span>
+              {greeting()},{" "}
+              <span className="code">{user?.name || "Admin"}</span>
             </h1>
             <p className="dash-area">{sec.toUpperCase()} QC</p>
           </div>

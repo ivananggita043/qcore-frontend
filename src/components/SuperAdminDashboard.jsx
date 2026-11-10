@@ -7,13 +7,34 @@ import "./AdminDashboard.css";
 import "./SuperAdminDashboard.css";
 import BuyerPerformance from "./BuyerPerformance.jsx";
 import { SECTIONS } from "../config/sections.js";
+import { useSuperDay } from "../api/superDashboard.js";
 
 /* ---------- helper tanggal ---------- */
-const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
 const pad = (n) => String(n).padStart(2, "0");
-const toISO = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-const fromISO = (s) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
-const longDate = (s) => { const d = fromISO(s); return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`; };
+const toISO = (d) =>
+  `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const fromISO = (s) => {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
+};
+const longDate = (s) => {
+  const d = fromISO(s);
+  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+};
 const greeting = () => {
   const h = new Date().getHours();
   if (h < 11) return "Good Morning";
@@ -21,20 +42,29 @@ const greeting = () => {
   if (h < 18) return "Good Evening";
   return "Good Night";
 };
-const num = (n) => Number(n).toLocaleString("en-US");                 // 1234 -> 1.234
-const pct = (n) => `${Number(n).toLocaleString("en-US", { maximumFractionDigits: 1 })}%`; // 98.8 -> 98.8%
+const num = (n) => Number(n).toLocaleString("en-US"); // 1234 -> 1.234
+const pct = (n) =>
+  `${Number(n).toLocaleString("en-US", { maximumFractionDigits: 1 })}%`; // 98.8 -> 98.8%
 
 const TODAY = toISO(new Date());
 
 const level = (p) => (p >= 90 ? "good" : p >= 80 ? "warn" : "bad");
 
-export default function SuperAdminDashboard({ user, onNavigate, onOpenSection, onLogout }) {
+export default function SuperAdminDashboard({
+  user,
+  onNavigate,
+  onOpenSection,
+  onLogout,
+}) {
   const [date, setDate] = useState(TODAY);
   const [menuOpen, setMenuOpen] = useState(false);
   const [page, setPage] = useState("home");
   const dateRef = useRef(null);
 
-  const { kpi, sections, topDefects } = useMemo(() => superDay(date), [date]);
+  const mock = useMemo(() => superDay(date), [date]);
+  const live = useSuperDay(date, mock);
+  const { kpi, sections } = live.data ?? { kpi: null, sections: [] };
+  const topDefects = mock.topDefects; // masih data tiruan
   const isToday = date === TODAY;
   const maxDefect = Math.max(1, ...topDefects.map((d) => d.count));
 
@@ -52,7 +82,7 @@ export default function SuperAdminDashboard({ user, onNavigate, onOpenSection, o
         <header className="dash-head">
           <div>
             <h1 className="dash-greeting">
-              {greeting()}, <span className="code">SprAdm!</span>
+              {greeting()}, <span className="code">{user?.name || "Super Admin"}</span>
             </h1>
             <p className="dash-area">
               {isToday ? "Here’s today QC overview" : "QC overview"}
@@ -65,7 +95,9 @@ export default function SuperAdminDashboard({ user, onNavigate, onOpenSection, o
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen(true)}
           >
-            <span /><span /><span />
+            <span />
+            <span />
+            <span />
           </button>
         </header>
 
@@ -73,7 +105,15 @@ export default function SuperAdminDashboard({ user, onNavigate, onOpenSection, o
         <div className="datepick">
           <button type="button" className="date-chip" onClick={openCalendar}>
             <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
-              <rect x="0.5" y="1.5" width="11" height="10" rx="1.5" fill="none" stroke="currentColor" />
+              <rect
+                x="0.5"
+                y="1.5"
+                width="11"
+                height="10"
+                rx="1.5"
+                fill="none"
+                stroke="currentColor"
+              />
               <rect x="0" y="3" width="12" height="2" fill="currentColor" />
             </svg>
             {longDate(date)}
@@ -91,53 +131,80 @@ export default function SuperAdminDashboard({ user, onNavigate, onOpenSection, o
         </div>
 
         {/* KPI */}
-        <div className="sa-kpis">
-          <Kpi label="Total Inspection" value={num(kpi.inspections.value)} delta={kpi.inspections.delta} upIsGood />
-          <Kpi label="Pass Rate" value={pct(kpi.passRate.value)} delta={kpi.passRate.delta} upIsGood tone="green" decimals />
-          <Kpi label="Defects" value={num(kpi.defects.value)} delta={kpi.defects.delta} upIsGood={false} tone="red" />
-          <Kpi label="Active QC" value={num(kpi.activeQc.value)} delta={kpi.activeQc.delta} upIsGood />
-        </div>
-
-        {/* Quality performance */}
-        <h2 className="recent-title">Quality Performance</h2>
-
-        {sections.length === 0 ? (
-          <p className="empty">No data for this date.</p>
+        {live.loading && !live.data ? (
+          <p className="empty" role="status" style={{ fontSize: 16, margin: "24px 0" }}>
+            Loading QC overview…
+          </p>
+        ) : live.error ? (
+          <p className="empty" role="alert" style={{ fontSize: 16, margin: "24px 0", color: "#c62828", fontWeight: 600 }}>
+            {live.error}
+          </p>
         ) : (
           <>
-            <ul className="card sa-sections">
-              {sections.map((s) => (
-                <li key={s.key}>
-                  <button
-                    type="button"
-                    className={`sa-section ${level(s.pct)}`}
-                    onClick={() => onOpenSection?.(s.key)}
-                    aria-label={`Lihat detail ${s.name}, ${s.pct} persen`}
-                  >
-                    <div className="top">
-                      <span className="nm">{s.name}</span>
-                      <strong>{s.pct}%</strong>
-                    </div>
-                    <div className="bar" role="img" aria-label={`${s.name} ${s.pct} persen`}>
-                      <i style={{ width: `${s.pct}%` }} />
-                    </div>
-                    <div className="meta">
-                      <span>{num(s.inspections)} inspections</span>
-                      <span>{num(s.defects)} defect</span>
-                      <span className="more" aria-hidden="true">Detail ›</span>
-                    </div>
-                  </button>
-                </li>
-              ))}
-            </ul>
-            <p className="perf-legend">Green 90% above · Yellow 80–89% · Red below 80%</p>
+            {live.failed.length > 0 && (
+              <p role="alert" style={{ fontSize: 15, margin: "0 0 12px", color: "#9a5b00", fontWeight: 600 }}>
+                Could not load: {live.failed.join(", ")}.
+              </p>
+            )}
+
+            {/* KPI */}
+            <div className="sa-kpis">
+              <Kpi label="Total Inspection" value={num(kpi.inspections.value)} delta={kpi.inspections.delta} upIsGood />
+              <Kpi label="Pass Rate" value={pct(kpi.passRate.value)} delta={kpi.passRate.delta} upIsGood tone="green" decimals />
+              <Kpi label="Defects" value={num(kpi.defects.value)} delta={kpi.defects.delta} upIsGood={false} tone="red" />
+              <Kpi label="Active QC (sample)" value={num(mock.kpi.activeQc.value)} delta={mock.kpi.activeQc.delta} upIsGood />
+            </div>
+            <p className="perf-legend">Totals exclude Final (sample data).</p>
+
+            {/* Quality performance */}
+            <h2 className="recent-title">Quality Performance</h2>
+
+            {sections.length === 0 ? (
+              <p className="empty">No data for this date.</p>
+            ) : (
+              <>
+                <ul className="card sa-sections">
+                  {sections.map((s) => (
+                    <li key={s.key}>
+                      <button
+                        type="button"
+                        className={`sa-section ${level(s.pct)}`}
+                        onClick={() => onOpenSection?.(s.key)}
+                        aria-label={`View ${s.name} details, ${s.pct} percent`}
+                      >
+                        <div className="top">
+                          <span className="nm">
+                            {s.name}
+                            {s.sample && (
+                              <span style={{ marginLeft: 8, fontSize: 14, fontWeight: 400, color: "#666" }}>
+                                (sample data)
+                              </span>
+                            )}
+                          </span>
+                          <strong>{s.pct}%</strong>
+                        </div>
+                        <div className="bar" role="img" aria-label={`${s.name} ${s.pct} percent`}>
+                          <i style={{ width: `${s.pct}%` }} />
+                        </div>
+                        <div className="meta">
+                          <span>{num(s.inspections)} inspections</span>
+                          <span>{num(s.defects)} defect</span>
+                          <span className="more" aria-hidden="true">Detail ›</span>
+                        </div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                <p className="perf-legend">Green 90% above · Yellow 80–89% · Red below 80%</p>
+              </>
+            )}
           </>
         )}
 
         {/* Defect terbanyak */}
         {topDefects.length > 0 && (
           <>
-            <h2 className="recent-title">Top Defects</h2>
+            <h2 className="recent-title">Top Defects (sample)</h2>
             <ul className="card sa-top">
               {topDefects.map((d, i) => (
                 <li key={d.name}>
@@ -165,7 +232,10 @@ export default function SuperAdminDashboard({ user, onNavigate, onOpenSection, o
         user={user}
         items={MENU_SUPER}
         active={page}
-        onSelect={(key) => { setPage(key); onNavigate?.(key); }}
+        onSelect={(key) => {
+          setPage(key);
+          onNavigate?.(key);
+        }}
         onLogout={onLogout}
       />
     </main>
@@ -181,8 +251,10 @@ function Kpi({ label, value, delta, upIsGood, tone }) {
       <p className="lbl">{label}</p>
       <p className={`val ${tone ?? ""}`}>{value}</p>
       <p className={`delta ${good === null ? "flat" : good ? "good" : "bad"}`}>
-        <span aria-hidden="true">{dir === "up" ? "↑" : dir === "down" ? "↓" : "–"}</span>
-        {" "}{text}
+        <span aria-hidden="true">
+          {dir === "up" ? "↑" : dir === "down" ? "↓" : "–"}
+        </span>{" "}
+        {text}
         <span className="vs"> vs yesterday</span>
       </p>
     </div>
