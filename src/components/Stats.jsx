@@ -5,12 +5,19 @@ import {
   statsDefects,
   statsLines,
   statsVolume,
-  statsManpower,
 } from "../mock/dashboardData.js";
 import "./Stats.css";
 import { SECTIONS } from "../config/sections.js";
 import StatsBuyerStyle from "./StatsBuyerStyle.jsx";
 import StatsLineDefects from "./StatsLineDefects.jsx";
+import { buildCuttingStats, useCuttingStatsData } from "../api/cutting.js";
+import { useQcCounts } from "../api/users.js";
+import {
+  buildInspectionStats,
+  buildLineDefects,
+  useInspectionStatsData,
+} from "../api/inspectionStats.js";
+import { buildCuttingProcessDefects } from "../api/cutting.js";
 
 const ALL = Object.keys(SECTIONS);
 const NAMES = Object.fromEntries(
@@ -395,13 +402,112 @@ export default function Stats({ isSuper, section = "sewing", onBack }) {
     secs.length === 1 && (secs[0] === "washing" || secs[0] === "finishing");
   const prevEnd = toISO(addDays(TODAY_D, -days));
 
-  const trend = useMemo(() => statsTrend(secs, TODAY, days), [key, days]);
-  const prev = useMemo(() => statsTrend(secs, prevEnd, days), [key, days]);
-  const hourly = useMemo(() => statsHourly(secs, TODAY, days), [key, days]);
-  const defects = useMemo(() => statsDefects(secs, TODAY, days), [key, days]);
-  const lines = useMemo(() => statsLines(secs, TODAY, days), [key, days]);
-  const volume = useMemo(() => statsVolume(secs, TODAY, days), [key, days]);
-  const manpower = useMemo(() => statsManpower(secs), [key]);
+  // section yang statistiknya sudah memakai data asli
+  const LIVE_INS = ["sewing"]; // tambahkan "washing", "finishing", "packing" bila siap
+
+  const isCut = secs.length === 1 && secs[0] === "cutting";
+  const isIns = secs.length === 1 && LIVE_INS.includes(secs[0]);
+  const liveCut = useCuttingStatsData(isCut);
+  const liveIns = useInspectionStatsData(secs[0], isIns);
+
+  const cut = useMemo(() => {
+    if (isCut && liveCut.list)
+      return {
+        cur: buildCuttingStats(liveCut.list, TODAY, days),
+        prev: buildCuttingStats(liveCut.list, prevEnd, days),
+      };
+    if (isIns && liveIns.list)
+      return {
+        cur: buildInspectionStats(
+          liveIns.list,
+          liveIns.types,
+          TODAY,
+          days,
+          secs[0],
+        ),
+        prev: buildInspectionStats(
+          liveIns.list,
+          liveIns.types,
+          prevEnd,
+          days,
+          secs[0],
+        ),
+      };
+    return null;
+  }, [isCut, isIns, liveCut.list, liveIns.list, liveIns.types, days, prevEnd]);
+
+  const lineDefectRows = useMemo(() => {
+    if (isCut && liveCut.list)
+      return buildCuttingProcessDefects(liveCut.list, TODAY, days);
+    if (isIns && liveIns.list)
+      return buildLineDefects(liveIns.list, liveIns.types, TODAY, days);
+    return null;
+  }, [isCut, isIns, liveCut.list, liveIns.list, liveIns.types, days]);
+
+  const trend = useMemo(
+    () => (cut ? cut.cur.trend : statsTrend(secs, TODAY, days)),
+    [key, days, cut],
+  );
+  const prev = useMemo(
+    () => (cut ? cut.prev.trend : statsTrend(secs, prevEnd, days)),
+    [key, days, cut],
+  );
+  const hourly = useMemo(
+    () => (cut ? cut.cur.hourly : statsHourly(secs, TODAY, days)),
+    [key, days, cut],
+  );
+  const defects = useMemo(
+    () => (cut ? cut.cur.defects : statsDefects(secs, TODAY, days)),
+    [key, days, cut],
+  );
+  const lines = useMemo(
+    () => (cut ? cut.cur.lines : statsLines(secs, TODAY, days)),
+    [key, days, cut],
+  );
+  const volume = useMemo(
+    () => (cut ? cut.cur.volume : statsVolume(secs, TODAY, days)),
+    [key, days, cut],
+  );
+
+  const qc = useQcCounts();
+  const manpower = useMemo(() => {
+    const rows = secs.map((s) => ({
+      section: s,
+      name: NAMES[s],
+      count: qc.counts ? (qc.counts[s] ?? 0) : "-",
+    }));
+    return {
+      total: qc.counts ? rows.reduce((n, r) => n + r.count, 0) : "-",
+      rows,
+    };
+  }, [key, qc.counts]);
+
+  // tunggu data asli agar data tiruan tidak sempat tampil
+  const waiting = isCut ? liveCut : isIns ? liveIns : null;
+  if (waiting && (waiting.loading || waiting.error))
+    return (
+      <main className="st">
+        <div className="st-wrap">
+          <header className="st-head">
+            <button
+              type="button"
+              className="st-back"
+              aria-label="Back"
+              onClick={onBack}
+            >
+              ‹
+            </button>
+            <div>
+              <h1 className="st-title">Statistics</h1>
+              <p className="st-sub">{NAMES[secs[0]]} QC</p>
+            </div>
+          </header>
+          <p className="st-empty" role={waiting.error ? "alert" : "status"}>
+            {waiting.error || `Loading ${NAMES[secs[0]]} statistics…`}
+          </p>
+        </div>
+      </main>
+    );
 
   const series = trend.series.map((s) => ({ ...s, color: COLORS[s.section] }));
   const diff = +(trend.totals.rate - prev.totals.rate).toFixed(1);
@@ -583,7 +689,7 @@ export default function Stats({ isSuper, section = "sewing", onBack }) {
           {/* 2. per jam */}
           <section className="card st-card">
             <h2>
-              {hourly.applicable
+              {hourly.applicable && worstHour?.rate > 0
                 ? `Defects peak at ${pad(worstHour.hour)}.00`
                 : "Defect per hour"}
             </h2>
@@ -676,7 +782,12 @@ export default function Stats({ isSuper, section = "sewing", onBack }) {
           {/* 4b. top 3 defect per line / proses */}
           {secs.length === 1 &&
             (secs[0] === "sewing" || secs[0] === "cutting") && (
-              <StatsLineDefects section={secs[0]} days={days} endISO={TODAY} />
+              <StatsLineDefects
+                section={secs[0]}
+                days={days}
+                endISO={TODAY}
+                rows={lineDefectRows}
+              />
             )}
 
           {/* 5. volume */}

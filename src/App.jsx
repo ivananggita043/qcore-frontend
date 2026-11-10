@@ -412,6 +412,7 @@ export default function App() {
       return (
         <CuttingCheck
           onBack={() => setScreen("dashboard")}
+          lineIds={session?.user?.lineIds ?? []}
           lineNames={session?.user?.lineNames ?? []}
           onFinish={(data) => {
             setResult(buildCuttingResult(data));

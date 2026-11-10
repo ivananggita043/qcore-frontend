@@ -238,3 +238,138 @@ export function useCuttingDay(date, enabled) {
 
   return state;
 }
+
+/* ---------- statistik cutting (dihitung dari seluruh data inspeksi) ---------- */
+//const pad2 = (n) => String(n).padStart(2, "0");
+const isoOfDate = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+const rateOf = (d, i) => (i ? +((d / i) * 100).toFixed(1) : 0);
+
+// unduh sekali semua inspeksi cutting (admin / super admin)
+export function useCuttingStatsData(enabled) {
+  const [state, setState] = useState({ list: null, loading: enabled, error: "" });
+
+  useEffect(() => {
+    if (!enabled) return;
+    const ctrl = new AbortController();
+    setState({ list: null, loading: true, error: "" });
+    fetchMyCuttingInspections(ctrl.signal)
+      .then((list) => setState({ list, loading: false, error: "" }))
+      .catch((e) => {
+        if (e?.name === "AbortError") return;
+        setState({ list: null, loading: false, error: e.message || "Failed to load Cutting data." });
+      });
+    return () => ctrl.abort();
+  }, [enabled]);
+
+  return state;
+}
+
+// bentuk hasil sama dengan fungsi mock di halaman Statistics
+export function buildCuttingStats(list, endISO, days) {
+  const [y, m, d] = endISO.split("-").map(Number);
+  const dates = [];
+  for (let k = days - 1; k >= 0; k--) dates.push(isoOfDate(new Date(y, m - 1, d - k)));
+  const idx = Object.fromEntries(dates.map((iso, i) => [iso, i]));
+  const day = dates.map(() => ({ checks: 0, insp: 0, def: 0 }));
+  const proc = new Map();
+  const types = new Map();
+
+  list.forEach((x) => {
+    if (!x.createdAt) return;
+    const i = idx[isoOfDate(new Date(x.createdAt))];
+    if (i === undefined) return;
+    const name = PROCESS_LABEL[x.processCheck] ?? x.processCheck;
+    const p = proc.get(name) ?? { insp: 0, def: 0, checks: 0 };
+    day[i].checks += 1;
+    p.checks += 1;
+    (x.items ?? []).forEach((it) => {
+      const q = it.quantityInspect || 0;
+      const f = it.quantityDefect || 0;
+      day[i].insp += q;
+      day[i].def += f;
+      p.insp += q;
+      p.def += f;
+      if (f > 0) {
+        const n = (it.defectTypeName || "Defect").trim();
+        types.set(n, (types.get(n) ?? 0) + f);
+      }
+    });
+    proc.set(name, p);
+  });
+
+  const sum = (k) => day.reduce((a, r) => a + r[k], 0);
+  const insp = sum("insp");
+  const def = sum("def");
+  const typeList = [...types.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+  const typeTotal = typeList.reduce((a, b) => a + b.count, 0);
+  let cum = 0;
+
+  return {
+    trend: {
+      dates,
+      series: [{ section: "cutting", name: "Cutting", values: day.map((r) => rateOf(r.def, r.insp)) }],
+      totals: { inspections: sum("checks"), defects: def, rate: rateOf(def, insp) },
+    },
+    hourly: { applicable: false, hours: [] },
+    defects: {
+      total: typeTotal,
+      rows: typeList.slice(0, 8).map((r) => {
+        cum += r.count;
+        return {
+          ...r,
+          share: typeTotal ? +((r.count / typeTotal) * 100).toFixed(1) : 0,
+          cum: typeTotal ? Math.round((cum / typeTotal) * 100) : 0,
+        };
+      }),
+    },
+    lines: {
+      kind: "process",
+      rows: [...proc.entries()]
+        .map(([name, p]) => ({ name, rate: rateOf(p.def, p.insp), inspections: p.checks }))
+        .sort((a, b) => b.rate - a.rate),
+    },
+    volume: { dates, values: day.map((r) => r.checks) },
+  };
+}
+
+// top 3 defect untuk tiap proses cutting (dari seluruh data inspeksi)
+export function buildCuttingProcessDefects(list, endISO, days) {
+  const [y, m, d] = endISO.split("-").map(Number);
+  const from = isoOfDate(new Date(y, m - 1, d - (days - 1)));
+  const proc = new Map(
+    Object.values(PROCESS_LABEL).map((n) => [n, { checks: 0, insp: 0, def: 0, types: new Map() }]),
+  );
+
+  list.forEach((x) => {
+    if (!x.createdAt) return;
+    const iso = isoOfDate(new Date(x.createdAt));
+    if (iso < from || iso > endISO) return;
+    const p = proc.get(PROCESS_LABEL[x.processCheck] ?? x.processCheck);
+    if (!p) return;
+    p.checks += 1;
+    (x.items ?? []).forEach((it) => {
+      const f = it.quantityDefect || 0;
+      p.insp += it.quantityInspect || 0;
+      p.def += f;
+      if (f > 0) {
+        const n = (it.defectTypeName || "Defect").trim();
+        p.types.set(n, (p.types.get(n) ?? 0) + f);
+      }
+    });
+  });
+
+  return [...proc.entries()]
+    .map(([name, p]) => ({
+      name,
+      inspections: p.checks,
+      defects: p.def,
+      rate: rateOf(p.def, p.insp),
+      top: [...p.types.entries()]
+        .map(([n, count]) => ({ name: n, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 3),
+    }))
+    .sort((a, b) => b.rate - a.rate || b.inspections - a.inspections);
+}

@@ -1,5 +1,6 @@
 import { apiFetch } from "./client.js";
 import { loadSession } from "../auth/session.js";
+import { useEffect, useState } from "react";
 
 // prefix backend mengikuti role yang sedang login
 const base = () => (loadSession()?.user?.role === "super_admin" ? "/super-admin" : "/admin");
@@ -41,6 +42,31 @@ const toApi = (f) => {
 export async function fetchUsers(signal) {
   const data = await apiFetch(`${base()}/users/all`, { signal });
   return (data ?? []).map(fromApi);
+}
+
+// jumlah akun QC aktif per section: { sewing: 12, cutting: 5, ... }
+export function useQcCounts() {
+  const [state, setState] = useState({ counts: null, error: "" });
+
+  useEffect(() => {
+    const ctrl = new AbortController();
+    fetchUsers(ctrl.signal)
+      .then((users) => {
+        const counts = {};
+        users.forEach((u) => {
+          if (u.role === "user" && u.active && u.section)
+            counts[u.section] = (counts[u.section] ?? 0) + 1;
+        });
+        setState({ counts, error: "" });
+      })
+      .catch((e) => {
+        if (e?.name === "AbortError") return;
+        setState({ counts: null, error: e.message || "Failed to load QC staff." });
+      });
+    return () => ctrl.abort();
+  }, []);
+
+  return state;
 }
 
 export async function fetchLines(signal) {

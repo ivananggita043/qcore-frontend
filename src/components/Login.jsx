@@ -20,6 +20,8 @@ export default function Login({ notice = "", onLogin }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (loading) return;
+    if (!username.trim()) return setError("Please enter your username.");
+    if (!password) return setError("Please enter your password.");
     setError("");
     setLoading(true);
     try {

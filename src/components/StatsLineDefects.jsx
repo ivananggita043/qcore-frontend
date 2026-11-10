@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { statsLineDefects } from "../mock/dashboardData.js";
+import { buildCuttingProcessDefects } from "../api/cutting.js";
 import "./StatsLineDefects.css";
 
 const num = (n) => Number(n).toLocaleString("en-US");
@@ -7,12 +8,17 @@ const pct = (n) =>
   `${Number(n).toLocaleString("en-US", { maximumFractionDigits: 1 })}%`;
 const LIMIT = 4;
 
-export default function StatsLineDefects({ section = "sewing", days, endISO }) {
+export default function StatsLineDefects({
+  section = "sewing",
+  days,
+  endISO,
+  rows: liveRows,
+}) {
   const [all, setAll] = useState(false);
   const unit = section === "cutting" ? "process" : "line";
   const rows = useMemo(
-    () => statsLineDefects(section, endISO, days),
-    [section, endISO, days],
+    () => liveRows ?? statsLineDefects(section, endISO, days),
+    [liveRows, section, endISO, days],
   );
   const shown = all ? rows : rows.slice(0, LIMIT);
 
@@ -69,7 +75,9 @@ export default function StatsLineDefects({ section = "sewing", days, endISO }) {
           className="sbs-more"
           onClick={() => setAll((v) => !v)}
         >
-          {all ? "Show less" : `View all (${rows.length} ${unit === "process" ? "processes" : "lines"})`}
+          {all
+            ? "Show less"
+            : `View all (${rows.length} ${unit === "process" ? "processes" : "lines"})`}
         </button>
       )}
     </section>

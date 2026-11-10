@@ -10,29 +10,43 @@ export async function login(username, password) {
       body: { username: username.trim(), password },
     });
   } catch (e) {
-    if (!(e instanceof ApiError) || e.status === 0) throw e;
+    if (!(e instanceof ApiError)) throw e;
 
-    // Backend saat ini mengembalikan status 500 (bukan 401) untuk password
-    // salah, jadi kita mengenalinya dari pesan error.
-    const msg = String(e.data?.message ?? "").toLowerCase();
-    if (e.status === 401 || e.status === 403 || msg.includes("bad credentials")) {
-      throw new ApiError("Username atau password salah.", e.status);
+    // tidak ada koneksi / server mati
+    if (e.status === 0) {
+      throw new ApiError(
+        "Cannot reach the server. Check your internet connection and try again.",
+        0
+      );
     }
-    if (msg.includes("disabled")) {
-      throw new ApiError("Akun ini nonaktif. Hubungi admin.", e.status);
+
+    const msg = String(e.data?.message ?? "").toLowerCase();
+
+    // Cek jenis akun lebih dulu, karena backend memakai status 401/403 untuk semuanya
+    if (msg.includes("tidak aktif") || msg.includes("disabled") || msg.includes("inactive")) {
+      throw new ApiError("Your account is inactive. Please contact your admin.", e.status);
+    }
+    if (msg.includes("terkunci") || msg.includes("locked")) {
+      throw new ApiError("Your account is locked. Please contact your admin.", e.status);
+    }
+    if (
+      e.status === 401 ||
+      e.status === 403 ||
+      msg.includes("salah") ||
+      msg.includes("bad credentials")
+    ) {
+      throw new ApiError("Incorrect username or password. Please check and try again.", e.status);
+    }
+    if (e.status === 429) {
+      throw new ApiError("Too many attempts. Please wait a moment and try again.", e.status);
     }
     if (e.status >= 500) {
-      throw new ApiError(
-        e.data?.message
-          ? "Terjadi gangguan di server. Coba lagi nanti."
-          : "Server tidak terjangkau atau sedang bermasalah.",
-        e.status
-      );
+      throw new ApiError("Something went wrong on the server. Please try again in a moment.", e.status);
     }
     throw e;
   }
 
-    // backend baru: lines [{id,name}]; tetap kompatibel dengan versi lama (lineIds)
+  // backend baru: lines [{id,name}]; tetap kompatibel dengan versi lama (lineIds)
   const lines = data.lines ?? (data.lineIds ?? []).map((id) => ({ id, name: "" }));
   const session = {
     token: data.token,
