@@ -11,6 +11,7 @@ import { fetchLines } from "../api/users.js";
 import InspectionDetail from "./InspectionDetail.jsx";
 import "./History.css";
 import Pager from "./Pager.jsx";
+import { useGenie } from "./useGenie.js";
 
 const SHORT = [
   "Jan",
@@ -163,9 +164,11 @@ function EditSheet({
   lineIdOf,
   defectNames,
   defectTypes,
-  onClose,
+  onClose: closeNow,
   onSave,
 }) {
+  const g = useGenie(closeNow);
+  const onClose = () => g.close(); // Esc, klik latar, dan tombol Cancel ikut beranimasi
   const fields = useMemo(() => fieldsFor(section), [section]);
   const [v, setV] = useState(() =>
     Object.fromEntries(fields.map((f) => [f.k, String(item[f.k] ?? "")])),
@@ -283,9 +286,10 @@ function EditSheet({
   };
 
   return (
-    <div className="hs-overlay" onClick={onClose}>
+    <div className={`hs-overlay${g.overlayCls}`} onClick={onClose}>
       <div
-        className="hs-sheet cols"
+        className={`hs-sheet cols${g.sheetCls}`}
+        style={g.style}
         role="dialog"
         aria-modal="true"
         aria-label="Edit check"

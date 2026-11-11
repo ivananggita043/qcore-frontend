@@ -10,6 +10,7 @@ import {
 import "./History.css";
 import CuttingDetail from "./CuttingDetail.jsx";
 import Pager from "./Pager.jsx";
+import { useGenie } from "./useGenie.js";
 
 const SHORT = [
   "Jan",
@@ -77,7 +78,9 @@ function toRow(x) {
 }
 
 /* ---------- lembar edit ---------- */
-function EditSheet({ row, onClose, onSave }) {
+function EditSheet({ row, onClose: closeNow, onSave }) {
+  const g = useGenie(closeNow);
+  const onClose = g.close;
   const raw = row.raw;
   const [comment, setComment] = useState(raw.comment ?? "");
   const [items, setItems] = useState(() =>
@@ -173,9 +176,13 @@ function EditSheet({ row, onClose, onSave }) {
   };
 
   return (
-    <div className="hs-overlay" onClick={busy ? undefined : onClose}>
+    <div
+      className={`hs-overlay${g.overlayCls}`}
+      onClick={busy ? undefined : onClose}
+    >
       <div
-        className="hs-sheet"
+        className={`hs-sheet${g.sheetCls}`}
+        style={g.style}
         role="dialog"
         aria-modal="true"
         aria-label="Edit check"

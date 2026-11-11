@@ -526,3 +526,66 @@
 @media (prefers-reduced-motion: reduce) {
   .hs-overlay, .hs-sheet { animation: none; }
 }
+
+
+/* ---------- SPRING CRITICALLY-DAMPED ---------- */
+:root {
+  /* fallback untuk browser lama */
+  --ease-spring-soft: cubic-bezier(0.33, 1, 0.68, 1);
+  --ease-fade-in:     cubic-bezier(0.33, 1, 0.68, 1);
+  --ease-fade-out:    cubic-bezier(0.4, 0, 0.9, 0.4);
+}
+
+@supports (animation-timing-function: linear(0, 1)) {
+  :root {
+    /* Nilai sampling dari 1 - (1+k)e^-k, k dari 0..8.
+       Monoton naik. Titik maksimum = 1. Tidak ada nilai > 1. */
+    --ease-spring-soft: linear(
+      0,       0.090  6.25%,
+      0.264   12.5%,  0.442 18.75%,
+      0.594   25%,    0.713 31.25%,
+      0.801   37.5%,  0.864 43.75%,
+      0.908   50%,    0.939 56.25%,
+      0.960   62.5%,  0.973 68.75%,
+      0.983   75%,    0.989 81.25%,
+      0.993   87.5%,  0.997 93.75%,
+      1
+    );
+  }
+}
+
+/* ---------- KEYFRAMES (sama seperti sebelumnya) ---------- */
+@keyframes hs-genie-in {
+  from { translate: var(--gx) var(--gy); scale: 0.06 0.02; }
+  to   { translate: 0 0;                scale: 1 1; }
+}
+@keyframes hs-genie-out {
+  from { translate: 0 0;                scale: 1 1; }
+  to   { translate: var(--gx) var(--gy); scale: 0.06 0.02; }
+}
+@keyframes hs-fade-in  { from { opacity: 0 } to { opacity: 1 } }
+@keyframes hs-fade-out { from { opacity: 1 } to { opacity: 0 } }
+
+/* ---------- APPLY ---------- */
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  .hs-sheet.genie {
+    will-change: translate, scale, opacity;
+    backface-visibility: hidden;
+    transform: translateZ(0);
+    contain: layout style;
+  }
+  .hs-sheet.genie.in {
+    animation:
+      hs-genie-in  0.55s var(--ease-spring-soft) both,
+      hs-fade-in   0.20s var(--ease-fade-in)     both;
+      animation-duration: 0.40s, 0.18s; 
+  }
+  .hs-sheet.genie.out {
+    animation:
+      hs-genie-out 0.42s var(--ease-spring-soft) both,
+      hs-fade-out  0.30s var(--ease-fade-out)    both;
+  }
+  .hs-overlay.out {
+    animation: hs-fade-out 0.32s var(--ease-fade-out) both;
+  }
+}

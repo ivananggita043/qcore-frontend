@@ -81,10 +81,12 @@ export default function Users({ isSuper, mySection, meId, onBack }) {
 
   const counts = useMemo(() => {
     const all = users ?? [];
+    const act = all.filter((u) => u.active);
     return {
       all: all.length,
-      admin: all.filter((u) => u.role !== "user").length,
-      qc: all.filter((u) => u.role === "user").length,
+      super: act.filter((u) => u.role === "super_admin").length,
+      admin: act.filter((u) => u.role === "admin").length,
+      qc: act.filter((u) => u.role === "user").length,
       inactive: all.filter((u) => !u.active).length,
     };
   }, [users]);
@@ -93,12 +95,13 @@ export default function Users({ isSuper, mySection, meId, onBack }) {
     const q = query.trim().toLowerCase();
     return (users ?? [])
       .filter((u) => {
-        if (filter === "admin" && u.role === "user") return false;
-        if (filter === "qc" && u.role !== "user") return false;
+        if (filter === "super" && !(u.active && u.role === "super_admin")) return false;
+        if (filter === "admin" && !(u.active && u.role === "admin")) return false;
+        if (filter === "qc" && !(u.active && u.role === "user")) return false;
         if (filter === "inactive" && u.active) return false;
         return (
           !q ||
-          [u.nama, u.username, u.nik].some((v) => v.toLowerCase().includes(q))
+          [u.nama, u.username, u.nik].some((v) => (v ?? "").toLowerCase().includes(q))
         );
       })
       .sort((a, b) => a.nama.localeCompare(b.nama));
@@ -131,9 +134,14 @@ export default function Users({ isSuper, mySection, meId, onBack }) {
 
   const CHIPS = [
     { key: "all", label: "ALL" },
-    { key: "admin", label: "ADMIN" },
+    ...(isSuper
+      ? [
+          { key: "super", label: "SUPER ADMIN" },
+          { key: "admin", label: "ADMIN" },
+        ]
+      : []),
     { key: "qc", label: "QC" },
-    { key: "inactive", label: "Inactive" },
+    { key: "inactive", label: "INACTIVE" },
   ];
 
   return (
