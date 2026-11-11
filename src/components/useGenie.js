@@ -17,6 +17,7 @@ if (typeof document !== "undefined") {
     true,
   );
 }
+export const genieOrigin = () => origin;
 
 const canAnimate = () =>
   typeof window !== "undefined" &&

@@ -237,3 +237,32 @@
 @media (min-width: 768px) {
   .us-chips { flex-wrap: wrap; overflow: visible; }
 }
+
+/* lapisan form: berada di atas daftar user */
+.us-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: #fff;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .us-bg { transition: transform 0.28s ease, opacity 0.28s ease; }
+  .us-bg.dim { transform: translateX(-24px); opacity: 0.6; }
+
+  .us-layer.slide { animation: us-slide-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .us-layer.slide.out { animation: us-slide-out 0.24s ease-in both; }
+  .us-layer.grow { animation: us-grow-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  .us-layer.grow.out { animation: us-grow-out 0.24s ease-in both; }
+}
+
+@keyframes us-slide-in { from { transform: translateX(32px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes us-slide-out { to { transform: translateX(32px); opacity: 0; } }
+@keyframes us-grow-in {
+  from { transform: scale(0.04); opacity: 0; }
+  50% { opacity: 1; }
+  to { transform: none; opacity: 1; }
+}
+@keyframes us-grow-out { to { transform: scale(0.04); opacity: 0; } }

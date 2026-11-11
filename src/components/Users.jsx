@@ -5,6 +5,7 @@ import { fetchUsers, fetchLines } from "../api/users.js";
 import { SECTIONS } from "../config/sections.js";
 import "./DashboardUser.css";
 import "./Users.css";
+import { genieOrigin } from "./useGenie.js";
 
 const sectionLabel = (s) => SECTIONS[s]?.label ?? s ?? "";
 
@@ -43,6 +44,31 @@ export default function Users({ isSuper, mySection, meId, onBack }) {
   const [filter, setFilter] = useState("all"); // all | admin | qc | inactive
   const [form, setForm] = useState(null); // { mode: "create" | "edit", target }
   const [toast, setToast] = useState("");
+  const [leaving, setLeaving] = useState(false);
+
+  const calm = () =>
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // fromButton: true untuk tombol "+" (tumbuh dari tombol), false untuk kartu (geser dari kanan)
+  const openForm = (f, fromButton = false) => {
+    const o = genieOrigin();
+    setForm({ ...f, grow: fromButton && o ? { x: o.x, y: o.y } : null });
+  };
+
+  const closeForm = (after) => {
+    if (leaving) return;
+    if (calm()) {
+      setForm(null);
+      after?.();
+      return;
+    }
+    setLeaving(true);
+    setTimeout(() => {
+      setForm(null);
+      setLeaving(false);
+      after?.();
+    }, 240);
+  };
 
   const load = useCallback(async (signal) => {
     setLoading(true);
@@ -95,13 +121,17 @@ export default function Users({ isSuper, mySection, meId, onBack }) {
     const q = query.trim().toLowerCase();
     return (users ?? [])
       .filter((u) => {
-        if (filter === "super" && !(u.active && u.role === "super_admin")) return false;
-        if (filter === "admin" && !(u.active && u.role === "admin")) return false;
+        if (filter === "super" && !(u.active && u.role === "super_admin"))
+          return false;
+        if (filter === "admin" && !(u.active && u.role === "admin"))
+          return false;
         if (filter === "qc" && !(u.active && u.role === "user")) return false;
         if (filter === "inactive" && u.active) return false;
         return (
           !q ||
-          [u.nama, u.username, u.nik].some((v) => (v ?? "").toLowerCase().includes(q))
+          [u.nama, u.username, u.nik].some((v) =>
+            (v ?? "").toLowerCase().includes(q),
+          )
         );
       })
       .sort((a, b) => a.nama.localeCompare(b.nama));
@@ -114,23 +144,6 @@ export default function Users({ isSuper, mySection, meId, onBack }) {
       ? u.role !== "super_admin"
       : u.role === "user" && u.section === mySection);
 
-  if (form) {
-    return (
-      <UserForm
-        mode={form.mode}
-        target={form.target}
-        isSuper={isSuper}
-        mySection={mySection}
-        lines={lines}
-        onBack={() => setForm(null)}
-        onDone={(msg) => {
-          setForm(null);
-          setToast(msg);
-          load();
-        }}
-      />
-    );
-  }
 
   const CHIPS = [
     { key: "all", label: "ALL" },
@@ -145,7 +158,11 @@ export default function Users({ isSuper, mySection, meId, onBack }) {
   ];
 
   return (
-    <main className="dash">
+    <>
+    <main
+      className={`dash us-bg${form && !leaving ? " dim" : ""}`}
+      inert={form ? "" : undefined}
+    >
       <StatusBar />
 
       <div className="dash-inner us">
@@ -271,7 +288,7 @@ export default function Users({ isSuper, mySection, meId, onBack }) {
                     type="button"
                     className="us-row"
                     disabled={!manage}
-                    onClick={() => setForm({ mode: "edit", target: u })}
+                    onClick={() => openForm({ mode: "edit", target: u })}
                   >
                     <span className="us-av">
                       <Avatar />
@@ -306,12 +323,39 @@ export default function Users({ isSuper, mySection, meId, onBack }) {
             type="button"
             className="us-fab"
             aria-label="Add user"
-            onClick={() => setForm({ mode: "create", target: null })}
+            onClick={() => openForm({ mode: "create", target: null }, true)}
           >
             +
           </button>
         </div>
       </div>
     </main>
+
+    {form && (
+      <div
+        className={`us-layer ${form.grow ? "grow" : "slide"}${leaving ? " out" : ""}`}
+        style={
+          form.grow
+            ? { transformOrigin: `${form.grow.x}px ${form.grow.y}px` }
+            : undefined
+        }
+      >
+        <UserForm
+          mode={form.mode}
+          target={form.target}
+          isSuper={isSuper}
+          mySection={mySection}
+          lines={lines}
+          onBack={() => closeForm()}
+          onDone={(msg) =>
+            closeForm(() => {
+              setToast(msg);
+              load();
+            })
+          }
+        />
+      </div>
+    )}
+    </>
   );
 }
