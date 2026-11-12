@@ -25,12 +25,29 @@ const dayBefore = (iso) => {
 const pctChange = (a, b) => (b ? +(((a - b) / b) * 100).toFixed(1) : 0);
 const passOf = (qty, def) => (qty ? +(100 - (def / qty) * 100).toFixed(1) : 0);
 
+const nameKey = (s) => String(s ?? "").trim().toUpperCase().replace(/\s+/g, " ");
+
 // laporan backend -> { inspections (jumlah check), qty (pcs), defects (pcs) }
-const adapt = (rep) => ({
-  inspections: rep?.totalInspection ?? rep?.totalInspections ?? 0,
-  qty: rep?.totalQuantityInspect ?? 0,
-  defects: rep?.totalDefects ?? 0,
-});
+const adapt = (rep) => {
+  const types = new Map();
+  const add = (name, n) => {
+    if (!name || !(n > 0)) return;
+    const k = nameKey(name);
+    const c = types.get(k) ?? { name: String(name).trim(), count: 0};
+    c.count += n;
+    types.set(k, c);
+  };
+  (rep?.defectSummaries ?? []).forEach((d) => add(d.defectType, d.totalDefects));
+  (rep?.processSummaries ?? []).forEach((p) => 
+    (p.detailRows ?? []).forEach((r) => add(r.defectTypeName, r.quantityDefect))
+);
+  return {
+    inspections: rep?.totalInspections ?? rep?.totalInspection ?? 0,
+    qty: rep?.totalQuantityInspect ?? 0,
+    defects: rep?.totalDefects ?? 0,
+    types: [...types.values()],
+  };
+};
 
 // hasil yang sudah berhasil disimpan per "section|tanggal" agar tidak diminta ulang
 const cache = new Map();
@@ -120,6 +137,20 @@ export function useSuperDay(date, mock) {
           defects: r.cur.defects,
         }));
 
+      // Top Defects: gabung antar section menurut nama defect
+      const merged = new Map();
+      rows.forEach((r) => 
+        r.cur.types.forEach((t) => {
+          const k = nameKey(t.name);
+          const c = merged.get(k) ?? { name: t.name, count: 0 };
+          c.count += t.count;
+          merged.set(k, c);
+        }),
+      );
+      const topDefects = [...merged.values()]
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 3);
+
       // Final: data tiruan, diberi tanda
       const finalRow = mock.sections.find((s) => s.key === "final");
       if (finalRow) sections.push({ ...finalRow, sample: true });
@@ -135,6 +166,7 @@ export function useSuperDay(date, mock) {
             defects: { value: cur.defects, delta: pctChange(curCmp.defects, prev.defects) },
           },
           sections,
+          topDefects,
         },
         loading: false,
         error: "",

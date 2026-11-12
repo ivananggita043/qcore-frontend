@@ -8,6 +8,7 @@ import "./SuperAdminDashboard.css";
 import BuyerPerformance from "./BuyerPerformance.jsx";
 import { SECTIONS } from "../config/sections.js";
 import { useSuperDay } from "../api/superDashboard.js";
+import { useBuyerStyleReport } from "../api/buyerStyleReport.js";
 
 /* ---------- helper tanggal ---------- */
 const MONTHS = [
@@ -64,7 +65,8 @@ export default function SuperAdminDashboard({
   const mock = useMemo(() => superDay(date), [date]);
   const live = useSuperDay(date, mock);
   const { kpi, sections } = live.data ?? { kpi: null, sections: [] };
-  const topDefects = mock.topDefects; // masih data tiruan
+  const buyerStyle = useBuyerStyleReport(date, true);
+  const topDefects = live.data?.topDefects ?? [];
   const isToday = date === TODAY;
   const maxDefect = Math.max(1, ...topDefects.map((d) => d.count));
 
@@ -82,7 +84,8 @@ export default function SuperAdminDashboard({
         <header className="dash-head">
           <div>
             <h1 className="dash-greeting">
-              {greeting()}, <span className="code">{user?.name || "Super Admin"}</span>
+              {greeting()},{" "}
+              <span className="code">{user?.name || "Super Admin"}</span>
             </h1>
             <p className="dash-area">
               {isToday ? "Here’s today QC overview" : "QC overview"}
@@ -132,27 +135,71 @@ export default function SuperAdminDashboard({
 
         {/* KPI */}
         {live.loading && !live.data ? (
-          <p className="empty" role="status" style={{ fontSize: 16, margin: "24px 0" }}>
+          <p
+            className="empty"
+            role="status"
+            style={{ fontSize: 16, margin: "24px 0" }}
+          >
             Loading QC overview…
           </p>
         ) : live.error ? (
-          <p className="empty" role="alert" style={{ fontSize: 16, margin: "24px 0", color: "#c62828", fontWeight: 600 }}>
+          <p
+            className="empty"
+            role="alert"
+            style={{
+              fontSize: 16,
+              margin: "24px 0",
+              color: "#c62828",
+              fontWeight: 600,
+            }}
+          >
             {live.error}
           </p>
         ) : (
           <>
             {live.failed.length > 0 && (
-              <p role="alert" style={{ fontSize: 15, margin: "0 0 12px", color: "#9a5b00", fontWeight: 600 }}>
+              <p
+                role="alert"
+                style={{
+                  fontSize: 15,
+                  margin: "0 0 12px",
+                  color: "#9a5b00",
+                  fontWeight: 600,
+                }}
+              >
                 Could not load: {live.failed.join(", ")}.
               </p>
             )}
 
             {/* KPI */}
             <div className="sa-kpis">
-              <Kpi label="Total Inspection" value={num(kpi.inspections.value)} delta={kpi.inspections.delta} upIsGood />
-              <Kpi label="Pass Rate" value={pct(kpi.passRate.value)} delta={kpi.passRate.delta} upIsGood tone="green" decimals />
-              <Kpi label="Defects" value={num(kpi.defects.value)} delta={kpi.defects.delta} upIsGood={false} tone="red" />
-              <Kpi label="Active QC (sample)" value={num(mock.kpi.activeQc.value)} delta={mock.kpi.activeQc.delta} upIsGood />
+              <Kpi
+                label="Total Inspection"
+                value={num(kpi.inspections.value)}
+                delta={kpi.inspections.delta}
+                upIsGood
+              />
+              <Kpi
+                label="Pass Rate"
+                value={pct(kpi.passRate.value)}
+                delta={kpi.passRate.delta}
+                upIsGood
+                tone="green"
+                decimals
+              />
+              <Kpi
+                label="Defects"
+                value={num(kpi.defects.value)}
+                delta={kpi.defects.delta}
+                upIsGood={false}
+                tone="red"
+              />
+              <Kpi
+                label="Active QC (sample)"
+                value={num(mock.kpi.activeQc.value)}
+                delta={mock.kpi.activeQc.delta}
+                upIsGood
+              />
             </div>
             <p className="perf-legend">Totals exclude Final (sample data).</p>
 
@@ -176,26 +223,41 @@ export default function SuperAdminDashboard({
                           <span className="nm">
                             {s.name}
                             {s.sample && (
-                              <span style={{ marginLeft: 8, fontSize: 14, fontWeight: 400, color: "#666" }}>
+                              <span
+                                style={{
+                                  marginLeft: 8,
+                                  fontSize: 14,
+                                  fontWeight: 400,
+                                  color: "#666",
+                                }}
+                              >
                                 (sample data)
                               </span>
                             )}
                           </span>
                           <strong>{s.pct}%</strong>
                         </div>
-                        <div className="bar" role="img" aria-label={`${s.name} ${s.pct} percent`}>
+                        <div
+                          className="bar"
+                          role="img"
+                          aria-label={`${s.name} ${s.pct} percent`}
+                        >
                           <i style={{ width: `${s.pct}%` }} />
                         </div>
                         <div className="meta">
                           <span>{num(s.inspections)} inspections</span>
                           <span>{num(s.defects)} defect</span>
-                          <span className="more" aria-hidden="true">Detail ›</span>
+                          <span className="more" aria-hidden="true">
+                            Detail ›
+                          </span>
                         </div>
                       </button>
                     </li>
                   ))}
                 </ul>
-                <p className="perf-legend">Green 90% above · Yellow 80–89% · Red below 80%</p>
+                <p className="perf-legend">
+                  Green 90% above · Yellow 80–89% · Red below 80%
+                </p>
               </>
             )}
           </>
@@ -204,7 +266,7 @@ export default function SuperAdminDashboard({
         {/* Defect terbanyak */}
         {topDefects.length > 0 && (
           <>
-            <h2 className="recent-title">Top Defects (sample)</h2>
+            <h2 className="recent-title">Top Defects</h2>
             <ul className="card sa-top">
               {topDefects.map((d, i) => (
                 <li key={d.name}>
@@ -223,7 +285,11 @@ export default function SuperAdminDashboard({
             </ul>
           </>
         )}
-        <BuyerPerformance sections={Object.keys(SECTIONS)} date={date} />
+        <BuyerPerformance sections={["all"]} date={date} live={buyerStyle} />
+        <p className="perf-legend">
+          Buyer &amp; Style covers Sewing, Washing, Finishing and Packing.
+          Cutting and Final are not included.
+        </p>
       </div>
 
       <MenuDrawer
