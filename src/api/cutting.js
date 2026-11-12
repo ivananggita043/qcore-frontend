@@ -107,6 +107,9 @@ export function cuttingUserDay(list, iso) {
 export const fetchMyCuttingInspections = (signal) =>
   apiFetch(`${base()}/all`, { signal }).then((d) => (Array.isArray(d) ? d : []));
 
+export const fetchCuttingPage = (page, size, signal) =>
+  apiFetch(`${base()}/paginated?page=${page}&size=${size}`, { signal });
+
 export const updateCuttingInspection = (id, body) =>
   apiFetch(`${base()}/${id}`, { method: "PUT", body });
 

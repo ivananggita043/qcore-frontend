@@ -4,6 +4,7 @@ import {
   SECTION_ENUM,
   deleteInspection,
   fetchMyInspections,
+  fetchInspectionsPage,
   loadDefectTypes,
   updateInspection,
 } from "../api/inspections.js";
@@ -12,6 +13,7 @@ import InspectionDetail from "./InspectionDetail.jsx";
 import "./History.css";
 import Pager from "./Pager.jsx";
 import { useGenie } from "./useGenie.js";
+import { usePagedList } from "../api/paged.js";
 
 const SHORT = [
   "Jan",
@@ -477,7 +479,6 @@ export default function InspectionHistory({
   isAdmin = false,
   onBack,
 }) {
-  const [state, setState] = useState({ list: [], loading: true, error: "" });
   const [defectTypes, setDefectTypes] = useState({}); // id -> {id,name,category,areaName}
   const [adminLines, setAdminLines] = useState([]);
   const [detailKey, setDetailKey] = useState(null);
@@ -492,19 +493,24 @@ export default function InspectionHistory({
   const [toast, setToast] = useState("");
   const [lines, setLines] = useState([]);
 
+  const data = usePagedList({
+    resetKey: section,
+    page,
+    size,
+    fetchPage: (p, s, signal) => fetchInspectionsPage(section, p, s, signal),
+    fetchAll: () => fetchMyInspections(section),
+  });
+  // filter di browser butuh seluruh data
+  const filtering =
+    query.trim() !== "" ||
+    buyer !== "all" ||
+    from !== "" ||
+    to !== "" ||
+    sort === "oldest";
+  const waitingAll = filtering && !data.isFull;
+
   useEffect(() => {
     const ctrl = new AbortController();
-    setState({ list: [], loading: true, error: "" });
-    fetchMyInspections(section, ctrl.signal)
-      .then((list) => setState({ list, loading: false, error: "" }))
-      .catch((e) => {
-        if (e?.name === "AbortError") return;
-        setState({
-          list: [],
-          loading: false,
-          error: e.message || "Failed to load history.",
-        });
-      });
     loadDefectTypes()
       .then((all) =>
         setDefectTypes(Object.fromEntries(all.map((t) => [t.id, t]))),
@@ -518,8 +524,8 @@ export default function InspectionHistory({
   }, [section, isAdmin]);
 
   const all = useMemo(
-    () => state.list.map((x) => toRow(section, x)).sort((a, b) => b.ts - a.ts),
-    [state.list, section],
+    () => (data.items ?? []).map((x) => toRow(section, x)).sort((a, b) => b.ts - a.ts),
+    [data.items, section],
   );
   const buyers = useMemo(
     () => [...new Set(all.map((c) => c.buyer))].sort(),
@@ -573,11 +579,7 @@ export default function InspectionHistory({
     setToast(msg);
     setTimeout(() => setToast(""), 2200);
   };
-  const replaceItem = (saved) =>
-    setState((s) => ({
-      ...s,
-      list: s.list.map((x) => (x.id === saved.id ? saved : x)),
-    }));
+  const replaceItem = (saved) => data.replace(saved);
 
   const saveNotes = async (row, note) => {
     const lineId = lineIdOf(row);
@@ -597,7 +599,7 @@ export default function InspectionHistory({
 
   const doDelete = async (row) => {
     await deleteInspection(row.key);
-    setState((s) => ({ ...s, list: s.list.filter((x) => x.id !== row.key) }));
+    data.remove(row.key);
     setDetailKey(null);
     flash("Check deleted.");
   };
@@ -690,6 +692,7 @@ export default function InspectionHistory({
             value={query}
             placeholder="Search by buyer, style, or color..."
             aria-label="Search history"
+            onFocus={data.loadFull}
             onChange={(e) => {
               setQuery(e.target.value);
               setPage(1);
@@ -701,6 +704,7 @@ export default function InspectionHistory({
             className="hs-select"
             value={sort}
             aria-label="sort"
+            onFocus={data.loadFull}
             onChange={(e) => setSort(e.target.value)}
           >
             <option value="recent">Recent</option>
@@ -710,6 +714,7 @@ export default function InspectionHistory({
             className="hs-select"
             value={buyer}
             aria-label="Filter buyer"
+            onFocus={data.loadFull}
             onChange={(e) => {
               setBuyer(e.target.value);
               setPage(1);
@@ -731,6 +736,7 @@ export default function InspectionHistory({
                 type="date"
                 value={from}
                 max={to || undefined}
+                onFocus={data.loadFull}
                 onChange={(e) => {
                   setFrom(e.target.value);
                   setPage(1);
@@ -742,6 +748,7 @@ export default function InspectionHistory({
               <input
                 type="date"
                 value={to}
+                onFocus={data.loadFull}
                 min={from || undefined}
                 onChange={(e) => {
                   setTo(e.target.value);
@@ -766,18 +773,20 @@ export default function InspectionHistory({
         )}
       </div>
 
-      {state.loading && all.length === 0 ? (
-        <p className="hs-empty">Loading…</p>
-      ) : state.error ? (
+      {data.error || data.fullError ? (
         <p className="hs-empty" role="alert">
-          {state.error}
+          {data.error || data.fullError}
+        </p>
+      ) : (data.loading && all.length === 0) || waitingAll ? (
+        <p className="hs-empty" role="status">
+          Loading…
         </p>
       ) : rows.length === 0 ? (
         <p className="hs-empty">No matching history found.</p>
       ) : (
         <>
           <ul className="hs-list">
-            {rows.slice((page - 1) * size, page * size).map((c) => (
+            {(data.isFull ? rows.slice((page - 1) * size, page * size) : rows).map((c) => (
               <li
                 key={c.key}
                 className="hs-card click"
@@ -806,7 +815,7 @@ export default function InspectionHistory({
             ))}
           </ul>
           <Pager
-            total={rows.length}
+            total={data.isFull ? rows.length : data.total}
             page={page}
             size={size}
             onPage={setPage}

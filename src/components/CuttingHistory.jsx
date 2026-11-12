@@ -6,11 +6,13 @@ import {
   fetchMyCuttingInspections,
   patchCuttingComment,
   updateCuttingInspection,
+  fetchCuttingPage,
 } from "../api/cutting.js";
 import "./History.css";
 import CuttingDetail from "./CuttingDetail.jsx";
 import Pager from "./Pager.jsx";
 import { useGenie } from "./useGenie.js";
+import { usePagedList } from "../api/paged.js";
 
 const SHORT = [
   "Jan",
@@ -321,8 +323,6 @@ function EditSheet({ row, onClose: closeNow, onSave }) {
 }
 
 export default function CuttingHistory({ user, isAdmin = false, onBack }) {
-  const [state, setState] = useState({ list: [], loading: true, error: "" });
-  const [tick, setTick] = useState(0);
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("recent");
   const [buyer, setBuyer] = useState("all");
@@ -332,23 +332,17 @@ export default function CuttingHistory({ user, isAdmin = false, onBack }) {
   const [toast, setToast] = useState("");
   const [detailKey, setDetailKey] = useState(null);
 
-  useEffect(() => {
-    const ctrl = new AbortController();
-    setState((s) => ({ ...s, loading: true, error: "" }));
-    fetchMyCuttingInspections(ctrl.signal)
-      .then((list) => setState({ list, loading: false, error: "" }))
-      .catch((e) => {
-        if (e?.name === "AbortError") return;
-        setState((s) => ({
-          ...s,
-          loading: false,
-          error: e.message || "Failed to load history.",
-        }));
-      });
-    return () => ctrl.abort();
-  }, [tick]);
+  const data = usePagedList({
+    resetKey: "cutting",
+    page,
+    size,
+    fetchPage: fetchCuttingPage,
+    fetchAll: () => fetchMyCuttingInspections(),
+  });
+  const filtering = query.trim() !== "" || buyer !== "all" || sort === "oldest";
+  const waitingAll = filtering && !data.isFull;
 
-  const all = useMemo(() => state.list.map(toRow), [state.list]);
+  const all = useMemo(() => data.list.map(toRow), [data.list]);
   const buyers = useMemo(
     () => [...new Set(all.flatMap((r) => r.buyers))].sort(),
     [all],
@@ -377,22 +371,19 @@ export default function CuttingHistory({ user, isAdmin = false, onBack }) {
   const saveEdit = async (body) => {
     await updateCuttingInspection(editing.key, body);
     setEditing(null);
-    setTick((t) => t + 1);
+    data.refresh();
     flash("Changes saved.");
   };
 
   const saveNotes = async (row, note) => {
     const saved = await patchCuttingComment(row.key, note || null);
-    setState((s) => ({
-      ...s,
-      list: s.list.map((x) => (x.id === saved.id ? saved : x)),
-    }));
+    data.replace(saved);
     flash("Notes saved.");
   };
 
   const doDelete = async (row) => {
     await deleteCuttingInspection(row.key);
-    setState((s) => ({ ...s, list: s.list.filter((x) => x.id !== row.key) }));
+    data.remove(row.key);
     setDetailKey(null);
     flash("Check deleted.");
   };
@@ -472,6 +463,7 @@ export default function CuttingHistory({ user, isAdmin = false, onBack }) {
             value={query}
             placeholder="Search by buyer, style, or color..."
             aria-label="Search history"
+            onFocus={data.loadFull}
             onChange={(e) => {
               setQuery(e.target.value);
               setPage(1);
@@ -484,6 +476,7 @@ export default function CuttingHistory({ user, isAdmin = false, onBack }) {
             className="hs-select"
             value={sort}
             aria-label="sort"
+            onFocus={data.loadFull}
             onChange={(e) => setSort(e.target.value)}
           >
             <option value="recent">Recent</option>
@@ -493,6 +486,7 @@ export default function CuttingHistory({ user, isAdmin = false, onBack }) {
             className="hs-select"
             value={buyer}
             aria-label="Filter buyer"
+            onFocus={data.loadFull}
             onChange={(e) => {
               setBuyer(e.target.value);
               setPage(1);
@@ -508,18 +502,23 @@ export default function CuttingHistory({ user, isAdmin = false, onBack }) {
         </div>
       </div>
 
-      {state.loading && all.length === 0 ? (
-        <p className="hs-empty">Loading…</p>
-      ) : state.error ? (
+      {data.error || data.fullError ? (
         <p className="hs-empty" role="alert">
-          {state.error}
+          {data.error || data.fullError}
+        </p>
+      ) : (data.loading && all.length === 0) || waitingAll ? (
+        <p className="hs-empty" role="status">
+          Loading…
         </p>
       ) : rows.length === 0 ? (
         <p className="hs-empty">No matching history found.</p>
       ) : (
         <>
           <ul className="hs-list">
-            {rows.slice((page - 1) * size, page * size).map((c) => (
+            {(data.isFull
+              ? rows.slice((page - 1) * size, page * size)
+              : rows
+            ).map((c) => (
               <li
                 key={c.key}
                 className="hs-card click"
@@ -548,7 +547,7 @@ export default function CuttingHistory({ user, isAdmin = false, onBack }) {
             ))}
           </ul>
           <Pager
-            total={rows.length}
+            total={data.isFull ? rows.length : data.total}
             page={page}
             size={size}
             onPage={setPage}

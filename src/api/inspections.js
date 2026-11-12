@@ -119,6 +119,10 @@ export const fetchMyInspections = (section, signal) =>
     Array.isArray(d) ? d : []
   );
 
+// satu halaman (page mulai 0, size maksimal 100)
+export const fetchInspectionsPage = (section, page, size, signal) =>
+  apiFetch(`${base()}/paginated?section=${SECTION_ENUM[section]}&page=${page}&size=${size}`, { signal });
+
 export const updateInspection = (id, body) =>
   apiFetch(`${base()}/${id}`, { method: "PUT", body });
 

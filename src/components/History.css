@@ -534,7 +534,9 @@
    Struktur kelas tetap: .hs-sheet.genie.in / .out, .hs-overlay.out
    ============================================================ */
 
+/* ---------- SPRING CRITICALLY-DAMPED ---------- */
 :root {
+  /* fallback untuk browser lama */
   --ease-spring-soft: cubic-bezier(0.33, 1, 0.68, 1);
   --ease-fade-in:     cubic-bezier(0.33, 1, 0.68, 1);
   --ease-fade-out:    cubic-bezier(0.4, 0, 0.9, 0.4);
@@ -542,63 +544,54 @@
 
 @supports (animation-timing-function: linear(0, 1)) {
   :root {
+    /* Nilai sampling dari 1 - (1+k)e^-k, k dari 0..8.
+       Monoton naik. Titik maksimum = 1. Tidak ada nilai > 1. */
     --ease-spring-soft: linear(
-      0,       0.090  6.25%,  0.264  12.5%,  0.442 18.75%,
-      0.594   25%,    0.713  31.25%, 0.801 37.5%,  0.864 43.75%,
-      0.908   50%,    0.939  56.25%, 0.960 62.5%,  0.973 68.75%,
-      0.983   75%,    0.989  81.25%, 0.993 87.5%,  0.997 93.75%, 1
+      0,       0.090  6.25%,
+      0.264   12.5%,  0.442 18.75%,
+      0.594   25%,    0.713 31.25%,
+      0.801   37.5%,  0.864 43.75%,
+      0.908   50%,    0.939 56.25%,
+      0.960   62.5%,  0.973 68.75%,
+      0.983   75%,    0.989 81.25%,
+      0.993   87.5%,  0.997 93.75%,
+      1
     );
   }
 }
 
-/* 9 titik zig-zag, ujung kiri lebih dulu ter-reveal (BL-first).
-   Semua y di keyframe `from` > 100% (tersembunyi di bawah),
-   di keyframe `to` < 0% (menutupi seluruh sheet). */
-@keyframes hs-zigzag-in {
-  from { clip-path: polygon(
-    0%   100%,
-    0%   160%,  12.5% 125%,  25%   170%,  37.5% 135%,  50%   180%,
-    62.5% 145%, 75%   190%,  87.5% 155%,  100%  200%,
-    100% 100%
-  ); }
-  to { clip-path: polygon(
-    0%   100%,
-    0%  -50%,   12.5% -85%,  25%  -40%,   37.5% -75%,  50%  -30%,
-    62.5% -65%,  75%  -20%,  87.5% -55%,  100% -10%,
-    100% 100%
-  ); }
+/* ---------- KEYFRAMES (sama seperti sebelumnya) ---------- */
+@keyframes hs-genie-in {
+  from { translate: var(--gx) var(--gy); scale: 0.06 0.02; }
+  to   { translate: 0 0;                scale: 1 1; }
 }
-
-@keyframes hs-zigzag-out {
-  from { clip-path: polygon(
-    0%   100%,
-    0%  -50%,   12.5% -85%,  25%  -40%,   37.5% -75%,  50%  -30%,
-    62.5% -65%,  75%  -20%,  87.5% -55%,  100% -10%,
-    100% 100%
-  ); }
-  to { clip-path: polygon(
-    0%   100%,
-    0%   160%,  12.5% 125%,  25%   170%,  37.5% 135%,  50%   180%,
-    62.5% 145%, 75%   190%,  87.5% 155%,  100%  200%,
-    100% 100%
-  ); }
+@keyframes hs-genie-out {
+  from { translate: 0 0;                scale: 1 1; }
+  to   { translate: var(--gx) var(--gy); scale: 0.06 0.02; }
 }
-
 @keyframes hs-fade-in  { from { opacity: 0 } to { opacity: 1 } }
 @keyframes hs-fade-out { from { opacity: 1 } to { opacity: 0 } }
 
+/* ---------- APPLY ---------- */
 @media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
   .hs-sheet.genie {
-    will-change: clip-path;
+    will-change: translate, scale, opacity;
     backface-visibility: hidden;
+    transform: translateZ(0);
     contain: layout style;
   }
-  .hs-sheet.genie.in  { animation: hs-zigzag-in  0.55s var(--ease-spring-soft) both; }
-  .hs-sheet.genie.out { animation: hs-zigzag-out 0.38s var(--ease-fade-out)    both; }
-  .hs-overlay.out     { animation: hs-fade-out   0.32s var(--ease-fade-out)    both; }
-}
-
-@supports not (clip-path: polygon(0 0)) {
-  .hs-sheet.genie.in  { animation: hs-fade-in  0.20s var(--ease-fade-in)  both; }
-  .hs-sheet.genie.out { animation: hs-fade-out 0.20s var(--ease-fade-out) both; }
+  .hs-sheet.genie.in {
+    animation:
+      hs-genie-in  0.55s var(--ease-spring-soft) both,
+      hs-fade-in   0.20s var(--ease-fade-in)     both;
+      animation-duration: 0.40s, 0.18s; 
+  }
+  .hs-sheet.genie.out {
+    animation:
+      hs-genie-out 0.42s var(--ease-spring-soft) both,
+      hs-fade-out  0.30s var(--ease-fade-out)    both;
+  }
+  .hs-overlay.out {
+    animation: hs-fade-out 0.32s var(--ease-fade-out) both;
+  }
 }
