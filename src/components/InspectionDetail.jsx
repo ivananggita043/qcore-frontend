@@ -55,7 +55,11 @@ function infoRows(section, c) {
     rows.push(["Process", c.process === "WASH" ? "Wash" : "Non-Wash"]);
   if (section === "packing") rows.push(["Cartons checked", String(c.cartons)]);
   rows.push(["Date", dateText(c.ts)], ["Time", timeText(c.ts)]);
-  if (c.slot) rows.push(["Hour", c.slot]);
+  if (c.slot)
+    rows.push([
+      "Hour",
+      c.slot.replace(/(\d{2}):(\d{2})-(\d{2}):(\d{2})/, "$1.$2 – $3.$4"),
+    ]);
   rows.push(["Line", c.lineName || "-"], ["Submitted by", c.by || "-"]);
   return rows;
 }

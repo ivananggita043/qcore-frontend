@@ -342,7 +342,7 @@ export default function CuttingHistory({ user, isAdmin = false, onBack }) {
   const filtering = query.trim() !== "" || buyer !== "all" || sort === "oldest";
   const waitingAll = filtering && !data.isFull;
 
-  const all = useMemo(() => data.list.map(toRow), [data.list]);
+  const all = useMemo(() => (data.items ?? []).map(toRow), [data.items]);
   const buyers = useMemo(
     () => [...new Set(all.flatMap((r) => r.buyers))].sort(),
     [all],

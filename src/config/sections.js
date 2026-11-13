@@ -16,3 +16,6 @@ export const hourSlots = () =>
   Array.from({ length: WORK_HOURS.end - WORK_HOURS.start }, (_, i) => WORK_HOURS.start + i);
 
 export const hourLabel = (h) => `${pad(h)}.00 – ${pad((h + 1) % 24)}.00`;
+
+// nilai yang dikirim ke backend: "10:00-11:00"
+export const hourValue = (h) => `${pad(h)}:00-${pad((h + 1) % 24)}:00`;

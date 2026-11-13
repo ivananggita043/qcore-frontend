@@ -10,6 +10,7 @@ import { userDay, buyerOfStyle } from "../mock/dashboardData.js";
 import "./DashboardUser.css";
 import { useCuttingInspections, cuttingUserDay } from "../api/cutting.js";
 import { useInspections, inspectionUserDay } from "../api/inspections.js";
+import AttendanceCard from "./AttendanceCard.jsx";
 
 /* ---------- helper tanggal ---------- */
 const MONTHS = [
@@ -170,6 +171,9 @@ export default function DashboardUser({
             onChange={(e) => e.target.value && setDate(e.target.value)}
           />
         </div>
+
+        {/* Absensi (hanya untuk hari ini) */}
+        {date === TODAY && <AttendanceCard />}
 
         {/* Ringkasan */}
         <section className="card summary">

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "./client.js";
-import { hourLabel } from "../config/sections.js";
+import { hourLabel, hourValue } from "../config/sections.js";
 
 import { loadSession } from "../auth/session.js";
 
@@ -103,7 +103,7 @@ export async function createInspection(section, job) {
       lineId: job.lineId,
       inspectedQuantity: inspect,
       transferQuantity: transfer,
-      inspectionTimeSlot: job.hour != null ? hourLabel(job.hour) : undefined,
+      inspectionTimeSlot: job.hour != null ? hourValue(job.hour) : undefined,
       defects,
       handfeel: job.handfeel,
       grade: job.grade,

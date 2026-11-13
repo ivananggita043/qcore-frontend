@@ -71,14 +71,7 @@ export default function UserForm({
     [lineList, section],
   );
   const selectedLines = sectionLines.filter((l) => f.lineIds.includes(l.id));
-
-  const toggleLine = (id) =>
-    set(
-      "lineIds",
-      f.lineIds.includes(id)
-        ? f.lineIds.filter((x) => x !== id)
-        : [...f.lineIds, id],
-    );
+  const extraLines = f.lineIds.length > 1; // akun lama yang masih punya banyak line
 
   const validate = () => {
     if (!f.nama.trim()) return "Name is required.";
@@ -89,7 +82,7 @@ export default function UserForm({
       return "Password must be at least 6 characters long.";
     if (!section) return "Please select a section.";
     if (isQc && f.lineIds.length === 0)
-      return "Please select at least one line for the QC account.";
+      return "Please select a line for the QC account.";
   };
 
   const run = async (action, doneMessage) => {
@@ -288,7 +281,7 @@ export default function UserForm({
           )}
         </div>
 
-        {/* Line (khusus QC) */}
+        {/* Line (khusus QC): satu line per QC */}
         {isQc && (
           <div className="uf-field">
             <span>Line</span>
@@ -296,56 +289,35 @@ export default function UserForm({
               <p className="uf-dd-off">Select a section first</p>
             ) : sectionLines.length === 0 ? (
               <p className="uf-hint">
-                There are no active lines in this section, or the list of lines
-                failed to load. Try the Refresh button.
+                There are no active lines in this section, or the list of lines failed to load.
+                Try the Refresh button.
               </p>
             ) : (
-              <details className="uf-dd" key={section}>
-                <summary>
-                  {selectedLines.length ? (
-                    <span className="uf-chips">
-                      {selectedLines.map((l) => (
-                        <b key={l.id}>{l.name}</b>
-                      ))}
-                    </span>
-                  ) : (
-                    <span className="ph">Select line</span>
-                  )}
-                </summary>
-                <div className="uf-dd-panel">
-                  <div className="uf-dd-bar">
-                    <span>
-                      {selectedLines.length} of {sectionLines.length} selected
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => set("lineIds", [])}
-                      disabled={selectedLines.length === 0}
-                    >
-                      Clear
-                    </button>
-                  </div>
-                  <div className="uf-lines">
+              <>
+                <div className="uf-select">
+                  <select
+                    value={f.lineIds.find((id) => sectionLines.some((l) => l.id === id)) ?? ""}
+                    onChange={(e) => set("lineIds", e.target.value ? [e.target.value] : [])}
+                  >
+                    <option value="">Select line</option>
                     {sectionLines.map((l) => (
-                      <label
-                        key={l.id}
-                        className={`uf-line ${f.lineIds.includes(l.id) ? "on" : ""}`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={f.lineIds.includes(l.id)}
-                          onChange={() => toggleLine(l.id)}
-                        />
-                        <span>{l.name}</span>
-                      </label>
+                      <option key={l.id} value={l.id}>
+                        {l.name}
+                      </option>
                     ))}
-                  </div>
+                  </select>
                 </div>
-              </details>
+                {extraLines && (
+                  <p className="uf-hint">
+                    This account was assigned several lines before. Saving keeps only the line
+                    selected above.
+                  </p>
+                )}
+              </>
             )}
           </div>
         )}
-
+        
         {/* Password */}
         <div className="uf-field">
           <span>Password</span>
