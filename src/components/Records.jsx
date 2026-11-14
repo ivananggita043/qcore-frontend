@@ -114,7 +114,7 @@ function buildPeriods(kind) {
   return out;
 }
 
-export default function Records({ user, isSuper, section = "sewing", onBack }) {
+export default function Records({ user, isSuper, section = "sewing", focus, onClearFocus, onBack }) {
   const [scope, setScope] = useState(isSuper ? "all" : section);
   const [open, setOpen] = useState({ today: true, detail: false, all: true });
   const [period, setPeriod] = useState("daily");

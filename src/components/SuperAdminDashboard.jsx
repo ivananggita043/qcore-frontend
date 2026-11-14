@@ -55,13 +55,14 @@ export default function SuperAdminDashboard({
   user,
   onNavigate,
   onOpenSection,
+  onOpenBuyerStyle,
   onLogout,
 }) {
   const [date, setDate] = useState(TODAY);
   const [menuOpen, setMenuOpen] = useState(false);
   const [page, setPage] = useState("home");
   const dateRef = useRef(null);
-
+  const [pick, setPick] = useState(null);
   const mock = useMemo(() => superDay(date), [date]);
   const live = useSuperDay(date, mock);
   const { kpi, sections } = live.data ?? { kpi: null, sections: [] };
@@ -285,12 +286,56 @@ export default function SuperAdminDashboard({
             </ul>
           </>
         )}
-        <BuyerPerformance sections={["all"]} date={date} live={buyerStyle} />
+        <BuyerPerformance
+          sections={["all"]}
+          date={date}
+          live={buyerStyle}
+          onSelect={(sel) => setPick({ ...sel, date })}
+        />
         <p className="perf-legend">
           Buyer &amp; Style covers Sewing, Washing, Finishing and Packing.
           Cutting and Final are not included.
         </p>
       </div>
+
+      {pick && (
+        <div
+          className="sa-pick"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Choose section"
+          onClick={() => setPick(null)}
+        >
+          <div className="sa-pick-box" onClick={(e) => e.stopPropagation()}>
+            <h3>{pick.name}</h3>
+            <p>Open data from which section?</p>
+            {[
+              ["sewing", "Sewing"],
+              ["washing", "Washing"],
+              ["finishing", "Finishing"],
+              ["packing", "Packing"],
+            ].map(([k, l]) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => {
+                  onOpenBuyerStyle?.({ ...pick, section: k });
+                  setPick(null);
+                }}
+              >
+                {l}
+              </button>
+            ))}
+            <button
+              type="button"
+              className="ghost"
+              onClick={() => setPick(null)}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       <MenuDrawer
         open={menuOpen}

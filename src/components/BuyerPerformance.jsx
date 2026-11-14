@@ -24,7 +24,7 @@ const SORTS = {
   volume: (a, b) => b.inspections - a.inspections,
 };
 
-export default function BuyerPerformance({ sections, date, live }) {
+export default function BuyerPerformance({ sections, date, live, onSelect }) {
   const [tab, setTab] = useState("buyer");
   const [sort, setSort] = useState("worst");
   const [scope, setScope] = useState("all");
@@ -138,15 +138,56 @@ export default function BuyerPerformance({ sections, date, live }) {
                     expandable={expandable}
                     open={isOpen}
                     onToggle={() => setOpen(isOpen ? null : key)}
+                    onGo={
+                      tab === "style" && onSelect
+                        ? () =>
+                            onSelect({
+                              kind: "style",
+                              buyer: r.buyer,
+                              name: r.name,
+                            })
+                        : undefined
+                    }
                   />
                   {expandable && isOpen && (
-                    <ul className="bp-sublist">
-                      {[...r.styles].sort(SORTS[sort]).map((s, j) => (
-                        <li key={s.name}>
-                          <Row rank={j + 1} r={s} max={max} small />
-                        </li>
-                      ))}
-                    </ul>
+                    <>
+                      {onSelect && (
+                        <button
+                          type="button"
+                          className="bp-more"
+                          onClick={() =>
+                            onSelect({
+                              kind: "buyer",
+                              buyer: r.name,
+                              name: r.name,
+                            })
+                          }
+                        >
+                          View {r.name} details ›
+                        </button>
+                      )}
+                      <ul className="bp-sublist">
+                        {[...r.styles].sort(SORTS[sort]).map((s, j) => (
+                          <li key={s.name}>
+                            <Row
+                              rank={j + 1}
+                              r={s}
+                              max={max}
+                              small
+                              onGo={
+                                onSelect &&
+                                (() =>
+                                  onSelect({
+                                    kind: "style",
+                                    buyer: r.name,
+                                    name: s.name,
+                                  }))
+                              }
+                            />
+                          </li>
+                        ))}
+                      </ul>
+                    </>
                   )}
                 </li>
               );
@@ -171,11 +212,14 @@ export default function BuyerPerformance({ sections, date, live }) {
   );
 }
 
-function Row({ rank, r, sub, max, expandable, open, onToggle, small }) {
-  const Tag = expandable ? "button" : "div";
+function Row({ rank, r, sub, max, expandable, open, onToggle, onGo, small }) {
+  const clickable = expandable || onGo;
+  const Tag = clickable ? "button" : "div";
   const props = expandable
     ? { type: "button", onClick: onToggle, "aria-expanded": open }
-    : {};
+    : onGo
+      ? { type: "button", onClick: onGo }
+      : {};
   const up = r.delta > 0;
   return (
     <Tag
@@ -239,6 +283,11 @@ function Row({ rank, r, sub, max, expandable, open, onToggle, small }) {
             strokeLinejoin="round"
           />
         </svg>
+      )}
+      {!expandable && onGo && (
+        <span className="chev" aria-hidden="true">
+          ›
+        </span>
       )}
     </Tag>
   );

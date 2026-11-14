@@ -154,3 +154,10 @@
   cursor: pointer;
 }
 .sa-back:focus-visible { outline: 3px solid #ff9d00; outline-offset: 2px; }
+
+.sa-pick { position: fixed; inset: 0; z-index: 80; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.sa-pick-box { background: #fff; border-radius: 14px; padding: 20px; width: 100%; max-width: 360px; display: grid; gap: 10px; }
+.sa-pick-box h3 { margin: 0; font-size: 20px; }
+.sa-pick-box p { margin: 0 0 4px; font-size: 16px; color: #555; }
+.sa-pick-box button { min-height: 50px; font-size: 17px; border-radius: 10px; border: 1px solid #5b5bd6; background: #5b5bd6; color: #fff; }
+.sa-pick-box button.ghost { background: #fff; color: #5b5bd6; }

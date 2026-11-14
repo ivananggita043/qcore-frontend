@@ -173,6 +173,8 @@ function buildFinalResult(data) {
 const LIVE_HISTORY = ["cutting", "sewing", "washing", "finishing", "packing"];
 
 export default function App() {
+  const [recordFocus, setRecordFocus] = useState(null);
+  const [historyFocus, setHistoryFocus] = useState(null);
   const [screen, setScreen] = useState("splash");
   const [session, setSession] = useState(loadSession); // dari sessionStorage (jika masih berlaku)
   const [notice, setNotice] = useState("");
@@ -293,9 +295,14 @@ export default function App() {
     if (key === "profile") return setScreen("profile");
     if (key === "reports") return setScreen("reports");
     if (key === "users") return setScreen("users");
-    if (key === "history" && LIVE_HISTORY.includes(section))
+    if (key === "history" && LIVE_HISTORY.includes(section)) {
+      setHistoryFocus(null);
       return setScreen("history");
-    if (key === "records") return setScreen("records");
+    }
+    if (key === "records") {
+      setRecordFocus(null);
+      return setScreen("records");
+    }
     if (key === "stats") return setScreen("stats");
     if (key === "home") {
       if (isSuper) setViewSection(null);
@@ -358,7 +365,12 @@ export default function App() {
           user={user}
           isSuper={isSuper}
           section={section}
-          onBack={() => setScreen("dashboard")}
+          focus={recordFocus}
+          onClearFocus={() => setRecordFocus(null)}
+          onBack={() => {
+            setRecordFocus(null);
+            setScreen("dashboard");
+          }}
         />
       );
     }
@@ -376,7 +388,14 @@ export default function App() {
           section={section}
           lineNames={su?.lineNames ?? []}
           isAdmin={isAdmin}
-          onBack={() => setScreen("dashboard")}
+          focus={historyFocus}
+          onBack={() => {
+            if (historyFocus) {
+              setHistoryFocus(null);
+              setViewSection(null);
+            }
+            setScreen("dashboard");
+          }}
         />
       );
     }
@@ -489,6 +508,11 @@ export default function App() {
             onNavigate={goAdminMenu}
             onOpenSection={(key) => setViewSection(key)}
             onLogout={() => handleLogout()}
+            onOpenBuyerStyle={(f) => {
+              setViewSection(f.section);
+              setHistoryFocus(f);
+              setScreen("history");
+            }}
           />
         );
       }

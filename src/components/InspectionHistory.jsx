@@ -478,15 +478,16 @@ export default function InspectionHistory({
   lineIds = [],
   isAdmin = false,
   onBack,
+  focus,
 }) {
   const [defectTypes, setDefectTypes] = useState({}); // id -> {id,name,category,areaName}
   const [adminLines, setAdminLines] = useState([]);
   const [detailKey, setDetailKey] = useState(null);
-  const [query, setQuery] = useState("");
   const [sort, setSort] = useState("recent");
-  const [buyer, setBuyer] = useState("all");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [query, setQuery] = useState(focus?.kind === "style" ? focus.name : "");
+  const [buyer, setBuyer] = useState(focus?.buyer ?? "all");
+  const [from, setFrom] = useState(focus?.date ?? "");
+  const [to, setTo] = useState(focus?.date ?? "");
   const [page, setPage] = useState(1);
   const [size, setSize] = useState(10);
   const [editing, setEditing] = useState(null);
@@ -500,6 +501,11 @@ export default function InspectionHistory({
     fetchPage: (p, s, signal) => fetchInspectionsPage(section, p, s, signal),
     fetchAll: () => fetchMyInspections(section),
   });
+
+  useEffect(() => {
+    if (focus) data.loadFull();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // filter di browser butuh seluruh data
   const filtering =
     query.trim() !== "" ||
@@ -524,7 +530,10 @@ export default function InspectionHistory({
   }, [section, isAdmin]);
 
   const all = useMemo(
-    () => (data.items ?? []).map((x) => toRow(section, x)).sort((a, b) => b.ts - a.ts),
+    () =>
+      (data.items ?? [])
+        .map((x) => toRow(section, x))
+        .sort((a, b) => b.ts - a.ts),
     [data.items, section],
   );
   const buyers = useMemo(
@@ -786,7 +795,10 @@ export default function InspectionHistory({
       ) : (
         <>
           <ul className="hs-list">
-            {(data.isFull ? rows.slice((page - 1) * size, page * size) : rows).map((c) => (
+            {(data.isFull
+              ? rows.slice((page - 1) * size, page * size)
+              : rows
+            ).map((c) => (
               <li
                 key={c.key}
                 className="hs-card click"
